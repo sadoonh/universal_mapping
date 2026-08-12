@@ -34,6 +34,13 @@
       --fk-soft: rgba(245, 176, 65, 0.12);
       --relationship: #b897ef;
       --danger: #f28b9e;
+      --sql-keyword: #8ebaff;
+      --sql-function: #c9a7ff;
+      --sql-string: #82d6ae;
+      --sql-number: #f2bd78;
+      --sql-comment: #71829b;
+      --sql-operator: #d6a7d9;
+      --sql-identifier: #d9e3f2;
       --shadow: 0 24px 70px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.2);
       --card-shadow: 0 16px 36px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.16);
       --focus: 0 0 0 3px rgba(122, 176, 255, 0.34);
@@ -63,6 +70,13 @@
       --fk-soft: rgba(152, 96, 11, 0.09);
       --relationship: #7047a4;
       --danger: #b83b54;
+      --sql-keyword: #1f62b5;
+      --sql-function: #7146a0;
+      --sql-string: #147052;
+      --sql-number: #8d550a;
+      --sql-comment: #6c7b8d;
+      --sql-operator: #87507f;
+      --sql-identifier: #26384f;
       --shadow: 0 24px 65px rgba(37, 51, 69, 0.13), 0 2px 8px rgba(37, 51, 69, 0.06);
       --card-shadow: 0 15px 34px rgba(50, 65, 84, 0.13), 0 2px 6px rgba(50, 65, 84, 0.07);
       --focus: 0 0 0 3px rgba(36, 111, 198, 0.23);
@@ -86,10 +100,10 @@
       transition: background-color 180ms ease, color 180ms ease;
     }
 
-    button, input { font: inherit; }
+    button, input, textarea { font: inherit; }
     button { color: inherit; }
 
-    button:focus-visible, input:focus-visible, .table-card:focus-visible,
+    button:focus-visible, input:focus-visible, textarea:focus-visible, .table-card:focus-visible,
     .diagram-viewport:focus-visible, .data-scroll:focus-visible {
       outline: none;
       box-shadow: var(--focus);
@@ -190,6 +204,14 @@
       stroke-linecap: round;
       stroke-linejoin: round;
     }
+
+    .viewer-workspace {
+      display: flex;
+      min-width: 0;
+      align-items: stretch;
+    }
+
+    .diagram-pane { position: relative; min-width: 0; flex: 1; }
 
     .diagram-viewport {
       position: relative;
@@ -582,6 +604,160 @@
     .data-table tbody tr:last-child .data-col-hover { box-shadow: inset 2px 0 0 var(--accent), inset -2px 0 0 var(--accent), inset 0 -2px 0 var(--accent); }
     .data-table tbody tr:last-child td { border-bottom: 0; }
 
+    .sql-open {
+      position: absolute;
+      z-index: 12;
+      top: 14px;
+      right: 14px;
+      display: inline-flex;
+      height: 32px;
+      align-items: center;
+      gap: 6px;
+      padding: 0 10px;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      color: var(--accent);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+    }
+
+    .sql-open:hover { border-color: var(--accent); background: var(--surface-hover); }
+    .sql-open[hidden] { display: none; }
+    .sql-open svg { width: 14px; height: 14px; }
+
+    .sql-drawer {
+      width: clamp(330px, 30vw, 400px);
+      flex: none;
+      border-left: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .sql-drawer[hidden] { display: none; }
+
+    .sql-drawer-inner {
+      display: flex;
+      height: 100%;
+      min-height: 0;
+      flex-direction: column;
+      padding: 14px;
+    }
+
+    .sql-drawer-header {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    .sql-drawer .close-button { position: static; flex: none; }
+
+    .sql-editor-shell {
+      position: relative;
+      width: 100%;
+      min-height: 210px;
+      flex: 1;
+      overflow: hidden;
+      border: 1px solid var(--border-strong);
+      border-radius: 9px;
+      background: var(--canvas);
+    }
+
+    .sql-editor-shell:focus-within { border-color: var(--accent); box-shadow: var(--focus); }
+
+    .sql-editor, .sql-highlight {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 12px;
+      border: 0;
+      border-radius: inherit;
+      font: 0.76rem/1.55 var(--font-mono);
+      letter-spacing: normal;
+      tab-size: 2;
+      text-align: left;
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+      word-break: normal;
+      scrollbar-gutter: stable;
+    }
+
+    .sql-highlight {
+      z-index: 1;
+      overflow: auto;
+      background: transparent;
+      scrollbar-color: transparent transparent;
+      color: var(--sql-identifier);
+      pointer-events: none;
+    }
+
+    .sql-editor {
+      z-index: 2;
+      resize: none;
+      outline: none;
+      overflow: auto;
+      background: transparent;
+      color: transparent;
+      caret-color: var(--accent);
+      -webkit-text-fill-color: transparent;
+    }
+
+    .sql-editor:focus-visible { box-shadow: none; }
+    .sql-editor::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+    .sql-token-keyword { color: var(--sql-keyword); }
+    .sql-token-function { color: var(--sql-function); }
+    .sql-token-string { color: var(--sql-string); }
+    .sql-token-number { color: var(--sql-number); }
+    .sql-token-comment { color: var(--sql-comment); }
+    .sql-token-operator { color: var(--sql-operator); }
+    .sql-token-identifier { color: var(--sql-identifier); }
+
+    @media (forced-colors: active) {
+      .sql-highlight { display: none; }
+      .sql-editor { color: CanvasText; -webkit-text-fill-color: CanvasText; }
+    }
+
+    .sql-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .sql-run, .sql-reset {
+      min-height: 32px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .sql-run {
+      padding: 0 15px;
+      border: 1px solid var(--accent-strong);
+      background: var(--accent-strong);
+      color: #fff;
+    }
+
+    .sql-run:hover { filter: brightness(1.08); }
+    .sql-reset { padding: 0 10px; border: 1px solid var(--border); background: var(--canvas); color: var(--muted); }
+    .sql-reset:hover { border-color: var(--border-strong); color: var(--text); }
+    .sql-shortcut { margin-left: auto; color: var(--subtle); font-size: 0.65rem; white-space: nowrap; }
+
+    .sql-message {
+      min-height: 1.2rem;
+      margin: 8px 1px 0;
+      color: var(--subtle);
+      font-size: 0.68rem;
+      line-height: 1.35;
+    }
+
+    .sql-message.error { color: var(--danger); }
+
     .sr-only {
       position: absolute;
       width: 1px;
@@ -597,6 +773,13 @@
       .toolbar { flex-wrap: wrap; }
       .toolbar > .tool-group:last-child { margin-left: auto; }
       .tool-button .optional-label { display: none; }
+      .sql-drawer { width: min(38vw, 360px); }
+    }
+
+    @media (max-width: 700px) {
+      .viewer-workspace { display: block; }
+      .sql-drawer { width: 100%; border-top: 1px solid var(--border); border-left: 0; }
+      .sql-editor-shell { min-height: 170px; resize: vertical; }
     }
 
     @media (max-width: 620px) {
@@ -651,12 +834,39 @@
         </div>
       </div>
 
-      <div class="diagram-viewport" id="viewport" tabindex="0" aria-label="Scrollable Universal Mapping schema diagram">
-        <div class="diagram-stage" id="stage">
-          <div class="diagram-scene" id="scene">
-            <svg class="connectors" id="connectors" aria-hidden="true"></svg>
+      <div class="viewer-workspace">
+        <div class="diagram-pane">
+          <div class="diagram-viewport" id="viewport" tabindex="0" aria-label="Scrollable Universal Mapping schema diagram">
+            <div class="diagram-stage" id="stage">
+              <div class="diagram-scene" id="scene">
+                <svg class="connectors" id="connectors" aria-hidden="true"></svg>
+              </div>
+            </div>
           </div>
+          <button class="sql-open" id="openSql" type="button" aria-controls="sqlDrawer" aria-expanded="false" title="Open local SQL playground">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m8 9-3 3 3 3m8-6 3 3-3 3m-5 3 2-12"></path></svg>
+            SQL
+          </button>
         </div>
+
+        <aside class="sql-drawer" id="sqlDrawer" aria-labelledby="sqlDrawerTitle" hidden>
+          <div class="sql-drawer-inner">
+            <header class="sql-drawer-header">
+              <button class="close-button" id="closeSql" type="button" aria-label="Close SQL playground" title="Close SQL playground">×</button>
+            </header>
+            <label class="sr-only" for="sqlEditor">SQL query</label>
+            <div class="sql-editor-shell">
+              <pre class="sql-highlight" id="sqlHighlight" aria-hidden="true"></pre>
+              <textarea class="sql-editor" id="sqlEditor" spellcheck="false" autocomplete="off" wrap="soft"></textarea>
+            </div>
+            <div class="sql-actions">
+              <button class="sql-run" id="runSql" type="button">Run</button>
+              <button class="sql-reset" id="resetSql" type="button" title="Restore starter query">Reset</button>
+              <span class="sql-shortcut"><kbd>⌘/Ctrl</kbd> + <kbd>Enter</kbd></span>
+            </div>
+            <p class="sql-message" id="sqlMessage" role="status" aria-live="polite"></p>
+          </div>
+        </aside>
       </div>
 
       <footer class="viewer-footer">
@@ -711,19 +921,19 @@
           { name: 'technology', type: 'TEXT', badges: ['nn'] },
           { name: 'variable_group', type: 'TEXT', badges: ['nn'] },
           { name: 'name', type: 'TEXT', badges: ['nn'] },
-          { name: 'value', type: 'TEXT' },
+          { name: 'example_value', type: 'TEXT' },
           { name: 'datatype', type: 'TEXT' }
         ],
         constraints: [
           { name: 'uq_domain_variable_mapping', definition: 'UNIQUE (universal_uid, technology, variable_group)' }
         ],
         rows: [
-          { domain_uid: 'S_A_1', universal_uid: '1', technology: 'Solar', variable_group: 'Assumption', name: 'Solar Capacity', value: '250', datatype: 'NUMERIC' },
-          { domain_uid: 'B_A_1', universal_uid: '1', technology: 'Battery', variable_group: 'Assumption', name: 'Battery Capacity', value: '180', datatype: 'NUMERIC' },
-          { domain_uid: 'W_A_1', universal_uid: '1', technology: 'Wind', variable_group: 'Assumption', name: 'Wind Capacity', value: '400', datatype: 'NUMERIC' },
-          { domain_uid: 'S_A_2', universal_uid: '2', technology: 'Solar', variable_group: 'Assumption', name: 'Project Capacity', value: '30000', datatype: 'NUMERIC' },
-          { domain_uid: 'S_E_1', universal_uid: '7', technology: 'Solar', variable_group: 'Preestimation', name: 'Preliminary Capacity', value: '240', datatype: 'NUMERIC' },
-          { domain_uid: 'S_M_1_1', universal_uid: '12', technology: 'Solar', variable_group: 'Model', name: 'Modeled Capacity', value: '248', datatype: 'NUMERIC' }
+          { domain_uid: 'S_A_1', universal_uid: '1', technology: 'Solar', variable_group: 'Assumption', name: 'Solar Capacity', example_value: '250', datatype: 'NUMERIC' },
+          { domain_uid: 'B_A_1', universal_uid: '1', technology: 'Battery', variable_group: 'Assumption', name: 'Battery Capacity', example_value: '180', datatype: 'NUMERIC' },
+          { domain_uid: 'W_A_1', universal_uid: '1', technology: 'Wind', variable_group: 'Assumption', name: 'Wind Capacity', example_value: '400', datatype: 'NUMERIC' },
+          { domain_uid: 'S_A_2', universal_uid: '2', technology: 'Solar', variable_group: 'Assumption', name: 'Project Capacity', example_value: '30000', datatype: 'NUMERIC' },
+          { domain_uid: 'S_E_1', universal_uid: '7', technology: 'Solar', variable_group: 'Preestimation', name: 'Preliminary Capacity', example_value: '240', datatype: 'NUMERIC' },
+          { domain_uid: 'S_M_1_1', universal_uid: '12', technology: 'Solar', variable_group: 'Model', name: 'Modeled Capacity', example_value: '248', datatype: 'NUMERIC' }
         ]
       },
       {
@@ -752,7 +962,7 @@
     ];
 
     const relationships = [
-      { from: 'universal_uid', fromField: 'universal_uid', to: 'domain_variable', toField: 'universal_uid', label: '1:N' }
+      { from: 'universal_uid', fromField: 'universal_uid', to: 'domain_variable', toField: 'universal_uid', label: '1 : N' }
     ];
 
     const SCENE = { width: 1260, height: 680 };
@@ -787,7 +997,15 @@
       themeToggle: document.getElementById('themeToggle'),
       themeIcon: document.getElementById('themeIcon'),
       themeLabel: document.getElementById('themeLabel'),
-      announcer: document.getElementById('announcer')
+      announcer: document.getElementById('announcer'),
+      openSql: document.getElementById('openSql'),
+      sqlDrawer: document.getElementById('sqlDrawer'),
+      closeSql: document.getElementById('closeSql'),
+      sqlEditor: document.getElementById('sqlEditor'),
+      sqlHighlight: document.getElementById('sqlHighlight'),
+      runSql: document.getElementById('runSql'),
+      resetSql: document.getElementById('resetSql'),
+      sqlMessage: document.getElementById('sqlMessage')
     };
 
     const cards = new Map();
@@ -797,6 +1015,7 @@
     const savedHiddenTables = loadJSON(STORAGE.hiddenTables, []);
     let hiddenTables = new Set(Array.isArray(savedHiddenTables) ? savedHiddenTables : []);
     let selectedTable = null;
+    let dataPanelMode = 'sample';
     let drag = null;
     let pan = null;
     let suppressOpenUntil = 0;
@@ -825,6 +1044,789 @@
     }
 
     function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+
+    const STARTER_QUERY = `SELECT
+    dv.domain_uid,
+    dv.name,
+    et.template_id,
+    et.template_name
+FROM domain_variable dv
+JOIN estimation_template et
+    ON dv.technology = et.technology
+   AND dv.variable_group = et.variable_group
+WHERE et.valid_to IS NULL;`;
+
+    const SQL_HIGHLIGHT_KEYWORDS = new Set((`
+      all and any as asc between by case cast cross desc distinct else end except exists
+      false fetch first from full group having in inner intersect into is join lateral left
+      like limit not null nulls offset on or order outer over partition right rows select
+      then true union using when where with current_date current_time current_timestamp
+      date interval numeric decimal real double precision integer int bigint smallint text
+      varchar character boolean bool primary foreign key references unique check default
+    `).trim().split(/\s+/));
+    const SQL_HIGHLIGHT_FUNCTIONS = new Set((`
+      abs avg coalesce concat count current_date current_time current_timestamp greatest
+      length lower max min nullif round sum upper least substring trim
+    `).trim().split(/\s+/));
+
+    function escapeHighlightHtml(value) {
+      return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function highlightSql(sql) {
+      let html = '';
+      let index = 0;
+      const token = (className, end) => {
+        html += `<span class="sql-token-${className}">${escapeHighlightHtml(sql.slice(index, end))}</span>`;
+        index = end;
+      };
+      const plain = (end) => {
+        html += escapeHighlightHtml(sql.slice(index, end));
+        index = end;
+      };
+
+      while (index < sql.length) {
+        if (sql.startsWith('--', index)) {
+          const newline = sql.indexOf('\n', index + 2);
+          token('comment', newline < 0 ? sql.length : newline);
+          continue;
+        }
+        if (sql.startsWith('/*', index)) {
+          let cursor = index + 2;
+          let depth = 1;
+          while (cursor < sql.length && depth) {
+            if (sql.startsWith('/*', cursor)) { depth += 1; cursor += 2; }
+            else if (sql.startsWith('*/', cursor)) { depth -= 1; cursor += 2; }
+            else cursor += 1;
+          }
+          token('comment', cursor);
+          continue;
+        }
+
+        const dollarTag = sql.slice(index).match(/^\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$/)?.[0];
+        if (dollarTag) {
+          const close = sql.indexOf(dollarTag, index + dollarTag.length);
+          token('string', close < 0 ? sql.length : close + dollarTag.length);
+          continue;
+        }
+
+        const char = sql[index];
+        if (char === "'") {
+          let cursor = index + 1;
+          while (cursor < sql.length) {
+            if (sql[cursor] === "'" && sql[cursor + 1] === "'") { cursor += 2; continue; }
+            if (sql[cursor] === "'") { cursor += 1; break; }
+            if (sql[cursor] === '\\' && cursor + 1 < sql.length) cursor += 2;
+            else cursor += 1;
+          }
+          token('string', cursor);
+          continue;
+        }
+        if (char === '"') {
+          let cursor = index + 1;
+          while (cursor < sql.length) {
+            if (sql[cursor] === '"' && sql[cursor + 1] === '"') { cursor += 2; continue; }
+            if (sql[cursor] === '"') { cursor += 1; break; }
+            cursor += 1;
+          }
+          token('identifier', cursor);
+          continue;
+        }
+        if (/\d/.test(char) || (char === '.' && /\d/.test(sql[index + 1] || ''))) {
+          const number = sql.slice(index).match(/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?/i)[0];
+          token('number', index + number.length);
+          continue;
+        }
+        if (/[A-Za-z_]/.test(char)) {
+          const word = sql.slice(index).match(/^[A-Za-z_][A-Za-z0-9_$]*/)[0];
+          const normalized = word.toLowerCase();
+          const nextCharacter = sql.slice(index + word.length).match(/^\s*(.)/s)?.[1];
+          const type = SQL_HIGHLIGHT_FUNCTIONS.has(normalized) || nextCharacter === '('
+            ? 'function'
+            : SQL_HIGHLIGHT_KEYWORDS.has(normalized) ? 'keyword' : 'identifier';
+          token(type, index + word.length);
+          continue;
+        }
+        const operator = sql.slice(index).match(/^(?:::|<=|>=|<>|!=|\|\||[-+*/%=<>])/);
+        if (operator) { token('operator', index + operator[0].length); continue; }
+        plain(index + 1);
+      }
+      return html + (sql.endsWith('\n') ? ' ' : '');
+    }
+
+    function updateSqlHighlight() {
+      elements.sqlHighlight.innerHTML = highlightSql(elements.sqlEditor.value);
+      elements.sqlHighlight.scrollTop = elements.sqlEditor.scrollTop;
+      elements.sqlHighlight.scrollLeft = elements.sqlEditor.scrollLeft;
+    }
+
+    function syncSqlHighlightScroll() {
+      elements.sqlHighlight.scrollTop = elements.sqlEditor.scrollTop;
+      elements.sqlHighlight.scrollLeft = elements.sqlEditor.scrollLeft;
+    }
+
+    class SqlPlaygroundError extends Error {}
+
+    function sqlError(message, sql, index = 0) {
+      const before = sql.slice(0, index);
+      const line = before.split('\n').length;
+      const column = index - before.lastIndexOf('\n');
+      return new SqlPlaygroundError(`${message} (line ${line}, column ${column})`);
+    }
+
+    function tokenizeSql(sql) {
+      const tokens = [];
+      let index = 0;
+      const push = (type, value, start = index) => tokens.push({ type, value, start });
+      while (index < sql.length) {
+        const char = sql[index];
+        if (/\s/.test(char)) { index += 1; continue; }
+        if (sql.startsWith('--', index)) {
+          index = sql.indexOf('\n', index + 2);
+          if (index < 0) break;
+          continue;
+        }
+        if (sql.startsWith('/*', index)) {
+          const end = sql.indexOf('*/', index + 2);
+          if (end < 0) throw sqlError('Unclosed block comment.', sql, index);
+          index = end + 2;
+          continue;
+        }
+        const start = index;
+        if (char === "'") {
+          index += 1;
+          let value = '';
+          let closed = false;
+          while (index < sql.length) {
+            if (sql[index] === "'" && sql[index + 1] === "'") { value += "'"; index += 2; continue; }
+            if (sql[index] === "'") { index += 1; closed = true; break; }
+            value += sql[index++];
+          }
+          if (!closed) throw sqlError('Unclosed string literal.', sql, start);
+          push('string', value, start);
+          continue;
+        }
+        if (char === '"') {
+          index += 1;
+          let value = '';
+          let closed = false;
+          while (index < sql.length) {
+            if (sql[index] === '"' && sql[index + 1] === '"') { value += '"'; index += 2; continue; }
+            if (sql[index] === '"') { index += 1; closed = true; break; }
+            value += sql[index++];
+          }
+          if (!closed) throw sqlError('Unclosed quoted identifier.', sql, start);
+          push('ident', value, start);
+          continue;
+        }
+        if (/\d/.test(char) || (char === '.' && /\d/.test(sql[index + 1] || ''))) {
+          const match = sql.slice(index).match(/^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?/i);
+          index += match[0].length;
+          push('number', Number(match[0]), start);
+          continue;
+        }
+        if (/[A-Za-z_]/.test(char)) {
+          const match = sql.slice(index).match(/^[A-Za-z_][A-Za-z0-9_$]*/)[0];
+          index += match.length;
+          push('ident', match.toLowerCase(), start);
+          continue;
+        }
+        const pair = sql.slice(index, index + 2);
+        if (['<=', '>=', '<>', '!=', '||', '::'].includes(pair)) {
+          index += 2;
+          push('op', pair, start);
+          continue;
+        }
+        if ('=<>+-*/%,.();'.includes(char)) {
+          index += 1;
+          push('op', char, start);
+          continue;
+        }
+        if (char === ':') throw sqlError('Parameters are not supported; replace them with a literal value.', sql, start);
+        throw sqlError(`Unsupported character “${char}”.`, sql, start);
+      }
+      tokens.push({ type: 'eof', value: '', start: sql.length });
+      return tokens;
+    }
+
+    const SQL_CLAUSE_WORDS = new Set([
+      'from', 'where', 'group', 'having', 'order', 'limit', 'offset', 'join', 'inner',
+      'left', 'right', 'full', 'cross', 'outer', 'on', 'union', 'intersect', 'except',
+      'asc', 'desc', 'nulls', 'when', 'then', 'else', 'end'
+    ]);
+
+    class SqlParser {
+      constructor(sql) {
+        this.sql = sql;
+        this.tokens = tokenizeSql(sql);
+        this.index = 0;
+      }
+
+      current() { return this.tokens[this.index]; }
+      next(offset = 1) { return this.tokens[this.index + offset] || this.tokens.at(-1); }
+      isWord(word, offset = 0) {
+        const token = this.tokens[this.index + offset];
+        return token?.type === 'ident' && token.value === word;
+      }
+      matchWord(word) { if (!this.isWord(word)) return false; this.index += 1; return true; }
+      matchOp(op) { if (this.current().type !== 'op' || this.current().value !== op) return false; this.index += 1; return true; }
+      expectWord(word) {
+        if (!this.matchWord(word)) this.fail(`Expected ${word.toUpperCase()}.`);
+      }
+      expectOp(op) { if (!this.matchOp(op)) this.fail(`Expected “${op}”.`); }
+      expectIdent(label = 'identifier') {
+        const token = this.current();
+        if (token.type !== 'ident') this.fail(`Expected ${label}.`);
+        this.index += 1;
+        return token.value;
+      }
+      fail(message, token = this.current()) { throw sqlError(message, this.sql, token.start); }
+
+      parse() {
+        if (!this.isWord('select')) {
+          const action = this.current().value ? String(this.current().value).toUpperCase() : 'This statement';
+          this.fail(`${action} is not available. Use a read-only SELECT query.`);
+        }
+        const query = this.parseSelect();
+        this.matchOp(';');
+        if (this.current().type !== 'eof') {
+          if (this.matchOp(';')) this.fail('Run one SELECT statement at a time.');
+          this.fail(`Unsupported syntax near “${this.current().value}”.`);
+        }
+        return query;
+      }
+
+      parseSelect() {
+        this.expectWord('select');
+        const distinct = this.matchWord('distinct');
+        const select = [];
+        do {
+          const expression = this.parseExpression();
+          let alias = null;
+          if (this.matchWord('as')) alias = this.expectIdent('column alias');
+          else if (this.current().type === 'ident' && !SQL_CLAUSE_WORDS.has(this.current().value)) alias = this.expectIdent('column alias');
+          select.push({ expression, alias });
+        } while (this.matchOp(','));
+
+        let from = null;
+        const joins = [];
+        if (this.matchWord('from')) {
+          from = this.parseTableRef();
+          while (true) {
+            if (this.matchOp(',')) {
+              joins.push({ type: 'cross', source: this.parseTableRef(), on: null });
+              continue;
+            }
+            let type = null;
+            if (this.matchWord('join')) type = 'inner';
+            else if (this.matchWord('inner')) { this.expectWord('join'); type = 'inner'; }
+            else if (this.matchWord('left')) { this.matchWord('outer'); this.expectWord('join'); type = 'left'; }
+            else if (this.matchWord('cross')) { this.expectWord('join'); type = 'cross'; }
+            else if (this.isWord('right') || this.isWord('full')) this.fail('RIGHT/FULL JOIN is not supported; reverse the tables and use LEFT JOIN.');
+            if (!type) break;
+            const source = this.parseTableRef();
+            let on = null;
+            if (type !== 'cross') { this.expectWord('on'); on = this.parseExpression(); }
+            joins.push({ type, source, on });
+          }
+        }
+
+        let where = null;
+        let groupBy = [];
+        let having = null;
+        let orderBy = [];
+        let limit = null;
+        let offset = 0;
+        if (this.matchWord('where')) where = this.parseExpression();
+        if (this.matchWord('group')) {
+          this.expectWord('by');
+          do { groupBy.push(this.parseExpression()); } while (this.matchOp(','));
+        }
+        if (this.matchWord('having')) having = this.parseExpression();
+        if (this.matchWord('order')) {
+          this.expectWord('by');
+          do {
+            const expression = this.parseExpression();
+            let direction = 'asc';
+            if (this.matchWord('asc')) direction = 'asc';
+            else if (this.matchWord('desc')) direction = 'desc';
+            if (this.matchWord('nulls')) this.fail('NULLS FIRST/LAST is not supported; default PostgreSQL null ordering is applied.');
+            orderBy.push({ expression, direction });
+          } while (this.matchOp(','));
+        }
+        if (this.matchWord('limit')) {
+          if (this.matchWord('all')) limit = null;
+          else {
+            const token = this.current();
+            if (token.type !== 'number' || !Number.isInteger(token.value) || token.value < 0) this.fail('LIMIT must be a non-negative integer.');
+            limit = token.value;
+            this.index += 1;
+          }
+        }
+        if (this.matchWord('offset')) {
+          const token = this.current();
+          if (token.type !== 'number' || !Number.isInteger(token.value) || token.value < 0) this.fail('OFFSET must be a non-negative integer.');
+          offset = token.value;
+          this.index += 1;
+        }
+        return { select, distinct, from, joins, where, groupBy, having, orderBy, limit, offset };
+      }
+
+      parseTableRef() {
+        const name = this.expectIdent('table name');
+        if (this.matchOp('.')) this.fail('Schema-qualified table names are unnecessary; use one of the three sample table names.');
+        let alias = null;
+        if (this.matchWord('as')) alias = this.expectIdent('table alias');
+        else if (this.current().type === 'ident' && !SQL_CLAUSE_WORDS.has(this.current().value)) alias = this.expectIdent('table alias');
+        return { name, alias: alias || name };
+      }
+
+      parseExpression(minPrecedence = 1) {
+        let left = this.parseUnary();
+        while (true) {
+          let operator = null;
+          let precedence = 0;
+          if (this.isWord('or')) { operator = 'or'; precedence = 1; }
+          else if (this.isWord('and')) { operator = 'and'; precedence = 2; }
+          else if (this.current().type === 'op' && ['=', '!=', '<>', '<', '<=', '>', '>='].includes(this.current().value)) { operator = this.current().value; precedence = 3; }
+          else if (this.isWord('like')) { operator = 'like'; precedence = 3; }
+          else if (this.isWord('in')) { operator = 'in'; precedence = 3; }
+          else if (this.isWord('between')) { operator = 'between'; precedence = 3; }
+          else if (this.isWord('is')) { operator = 'is'; precedence = 3; }
+          else if (this.isWord('not') && ['like', 'in', 'between'].includes(this.next().value)) { operator = `not ${this.next().value}`; precedence = 3; }
+          else if (this.current().type === 'op' && this.current().value === '||') { operator = '||'; precedence = 4; }
+          else if (this.current().type === 'op' && ['+', '-'].includes(this.current().value)) { operator = this.current().value; precedence = 5; }
+          else if (this.current().type === 'op' && ['*', '/', '%'].includes(this.current().value)) { operator = this.current().value; precedence = 6; }
+          if (!operator || precedence < minPrecedence) break;
+
+          if (operator.startsWith('not ')) this.index += 2;
+          else this.index += 1;
+          if (operator === 'is') {
+            const negate = this.matchWord('not');
+            const target = this.current();
+            if (!['null', 'true', 'false'].some((word) => this.matchWord(word))) this.fail('IS supports NULL, TRUE, or FALSE.', target);
+            left = { type: 'is', left, target: target.value, negate };
+          } else if (operator === 'in' || operator === 'not in') {
+            this.expectOp('(');
+            const values = [];
+            if (!this.matchOp(')')) {
+              do { values.push(this.parseExpression()); } while (this.matchOp(','));
+              this.expectOp(')');
+            }
+            left = { type: 'in', left, values, negate: operator.startsWith('not') };
+          } else if (operator === 'between' || operator === 'not between') {
+            const low = this.parseExpression(3);
+            this.expectWord('and');
+            const high = this.parseExpression(3);
+            left = { type: 'between', left, low, high, negate: operator.startsWith('not') };
+          } else {
+            const right = this.parseExpression(precedence + 1);
+            left = { type: 'binary', operator, left, right };
+          }
+        }
+        return left;
+      }
+
+      parseUnary() {
+        if (this.matchWord('not')) return { type: 'unary', operator: 'not', value: this.parseUnary() };
+        if (this.matchOp('+')) return { type: 'unary', operator: '+', value: this.parseUnary() };
+        if (this.matchOp('-')) return { type: 'unary', operator: '-', value: this.parseUnary() };
+        let value = this.parsePrimary();
+        while (this.matchOp('::')) value = { type: 'cast', value, dataType: this.parseDataType() };
+        return value;
+      }
+
+      parseDataType() {
+        const dataType = this.expectIdent('cast data type');
+        if (this.matchOp('(')) {
+          while (!this.matchOp(')')) {
+            if (this.current().type === 'eof') this.fail('Unclosed cast data type.');
+            this.index += 1;
+          }
+        }
+        return dataType;
+      }
+
+      parsePrimary() {
+        const token = this.current();
+        if (token.type === 'number') { this.index += 1; return { type: 'literal', value: token.value }; }
+        if (token.type === 'string') { this.index += 1; return { type: 'literal', value: token.value }; }
+        if (this.matchWord('null')) return { type: 'literal', value: null };
+        if (this.matchWord('true')) return { type: 'literal', value: true };
+        if (this.matchWord('false')) return { type: 'literal', value: false };
+        if (this.matchOp('(')) {
+          const value = this.parseExpression();
+          this.expectOp(')');
+          return value;
+        }
+        if (this.matchOp('*')) return { type: 'wildcard', qualifier: null };
+        if (token.type === 'ident') {
+          this.index += 1;
+          const name = token.value;
+          if (this.matchOp('(')) {
+            if (name === 'cast') {
+              const value = this.parseExpression();
+              this.expectWord('as');
+              const dataType = this.parseDataType();
+              this.expectOp(')');
+              return { type: 'cast', value, dataType };
+            }
+            const distinct = this.matchWord('distinct');
+            const args = [];
+            if (!this.matchOp(')')) {
+              do { args.push(this.parseExpression()); } while (this.matchOp(','));
+              this.expectOp(')');
+            }
+            return { type: 'call', name, args, distinct };
+          }
+          if (this.matchOp('.')) {
+            if (this.matchOp('*')) return { type: 'wildcard', qualifier: name };
+            return { type: 'column', qualifier: name, name: this.expectIdent('column name') };
+          }
+          return { type: 'column', qualifier: null, name };
+        }
+        this.fail('Expected a column, literal, function, or parenthesized expression.', token);
+      }
+    }
+
+    const AGGREGATE_FUNCTIONS = new Set(['count', 'sum', 'avg', 'min', 'max']);
+    const SCALAR_FUNCTIONS = new Set(['lower', 'upper', 'length', 'abs', 'round', 'coalesce', 'concat']);
+    const CAST_TYPES = new Set(['numeric', 'decimal', 'real', 'double', 'float', 'integer', 'int', 'bigint', 'smallint', 'text', 'varchar', 'character', 'boolean', 'bool', 'date']);
+
+    function containsAggregate(node) {
+      if (!node || typeof node !== 'object') return false;
+      if (node.type === 'call' && AGGREGATE_FUNCTIONS.has(node.name)) return true;
+      return Object.values(node).some((value) => Array.isArray(value)
+        ? value.some(containsAggregate)
+        : containsAggregate(value));
+    }
+
+    function normalizeTableRow(table, record) {
+      return Object.fromEntries(table.fields.map((field) => {
+        const raw = record[field.name];
+        if (raw === 'NULL' || raw == null) return [field.name, null];
+        if (/^(INTEGER|NUMERIC|DECIMAL|REAL)/.test(field.type)) return [field.name, Number(raw)];
+        return [field.name, raw];
+      }));
+    }
+
+    function sourceDefinitions(query) {
+      const refs = query.from ? [query.from, ...query.joins.map((join) => join.source)] : [];
+      const aliases = new Set();
+      return refs.map((ref) => {
+        const table = schema.find((item) => item.name.toLowerCase() === ref.name.toLowerCase());
+        if (!table) throw new SqlPlaygroundError(`Unknown table “${ref.name}”. Use universal_uid, domain_variable, or estimation_template.`);
+        if (aliases.has(ref.alias)) throw new SqlPlaygroundError(`Table alias “${ref.alias}” is used more than once.`);
+        aliases.add(ref.alias);
+        return { ref, table };
+      });
+    }
+
+    function resolveColumnSource(node, sources) {
+      if (node.type !== 'column') return null;
+      let matches;
+      if (node.qualifier) {
+        matches = sources.filter(({ ref, table }) => (ref.alias === node.qualifier || table.name === node.qualifier)
+          && table.fields.some((field) => field.name === node.name));
+      } else {
+        matches = sources.filter(({ table }) => table.fields.some((field) => field.name === node.name));
+      }
+      if (!matches.length) throw new SqlPlaygroundError(`Unknown column “${node.qualifier ? `${node.qualifier}.` : ''}${node.name}”.`);
+      if (matches.length > 1) throw new SqlPlaygroundError(`Column “${node.name}” is ambiguous; qualify it with a table alias.`);
+      const source = matches[0];
+      return { table: source.table, ref: source.ref, field: source.table.fields.find((field) => field.name === node.name) };
+    }
+
+    function contextValue(node, context, sources, output) {
+      if (!node.qualifier && output?.has(node.name)) return output.get(node.name);
+      const source = resolveColumnSource(node, sources);
+      const entry = context?.sources.find((item) => item.alias === source.ref.alias);
+      return entry ? entry.row[node.name] : null;
+    }
+
+    function validateExpression(node, sources, { wildcard = false } = {}) {
+      if (!node || typeof node !== 'object') return;
+      if (node.type === 'column') { resolveColumnSource(node, sources); return; }
+      if (node.type === 'wildcard') {
+        if (!wildcard) throw new SqlPlaygroundError('“*” is only supported in the SELECT list or COUNT(*).');
+        return;
+      }
+      if (node.type === 'cast' && !CAST_TYPES.has(node.dataType)) {
+        throw new SqlPlaygroundError(`Cast type “${node.dataType}” is not supported. Use numeric, integer, text, boolean, or date.`);
+      }
+      if (node.type === 'call') {
+        if (!AGGREGATE_FUNCTIONS.has(node.name) && !SCALAR_FUNCTIONS.has(node.name)) {
+          throw new SqlPlaygroundError(`Function “${node.name}” is not supported. Try COUNT, SUM, AVG, MIN, MAX, LOWER, UPPER, LENGTH, ROUND, COALESCE, or CONCAT.`);
+        }
+        if (AGGREGATE_FUNCTIONS.has(node.name) && node.args.length !== 1) {
+          throw new SqlPlaygroundError(`${node.name.toUpperCase()} expects one argument; use COUNT(*) to count rows.`);
+        }
+      }
+      Object.values(node).forEach((value) => {
+        if (Array.isArray(value)) value.forEach((item) => validateExpression(item, sources, { wildcard: node.type === 'call' && node.name === 'count' }));
+        else if (value && typeof value === 'object') validateExpression(value, sources, { wildcard: node.type === 'call' && node.name === 'count' });
+      });
+    }
+
+    function sqlTruthy(value) { return value === true || (value != null && Boolean(value)); }
+
+    function compareValues(left, right, operator) {
+      if (left == null || right == null) return false;
+      if (operator === '=') return left === right;
+      if (operator === '!=' || operator === '<>') return left !== right;
+      if (operator === '<') return left < right;
+      if (operator === '<=') return left <= right;
+      if (operator === '>') return left > right;
+      if (operator === '>=') return left >= right;
+      return false;
+    }
+
+    function likePattern(pattern) {
+      const escaped = String(pattern).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*').replace(/_/g, '.');
+      return new RegExp(`^${escaped}$`, 's');
+    }
+
+    function castValue(value, dataType) {
+      if (value == null) return null;
+      if (['numeric', 'decimal', 'real', 'double', 'float', 'integer', 'int', 'bigint', 'smallint'].includes(dataType)) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) throw new SqlPlaygroundError(`Cannot cast “${value}” to ${dataType}.`);
+        return ['integer', 'int', 'bigint', 'smallint'].includes(dataType) ? Math.trunc(number) : number;
+      }
+      if (['text', 'varchar', 'character'].includes(dataType)) return String(value);
+      if (['boolean', 'bool'].includes(dataType)) {
+        if (value === true || value === false) return value;
+        if (/^(true|t|1)$/i.test(String(value))) return true;
+        if (/^(false|f|0)$/i.test(String(value))) return false;
+        throw new SqlPlaygroundError(`Cannot cast “${value}” to boolean.`);
+      }
+      if (dataType === 'date') return String(value);
+      throw new SqlPlaygroundError(`Cast type “${dataType}” is not supported. Use numeric, integer, text, boolean, or date.`);
+    }
+
+    function evaluateExpression(node, context, group, sources, output = null) {
+      if (node.type === 'literal') return node.value;
+      if (node.type === 'column') return contextValue(node, context, sources, output);
+      if (node.type === 'cast') return castValue(evaluateExpression(node.value, context, group, sources, output), node.dataType);
+      if (node.type === 'unary') {
+        const value = evaluateExpression(node.value, context, group, sources, output);
+        if (node.operator === 'not') return !sqlTruthy(value);
+        if (value == null) return null;
+        return node.operator === '-' ? -Number(value) : Number(value);
+      }
+      if (node.type === 'is') {
+        const value = evaluateExpression(node.left, context, group, sources, output);
+        const expected = node.target === 'null' ? value == null : value === (node.target === 'true');
+        return node.negate ? !expected : expected;
+      }
+      if (node.type === 'in') {
+        const left = evaluateExpression(node.left, context, group, sources, output);
+        const found = node.values.some((item) => compareValues(left, evaluateExpression(item, context, group, sources, output), '='));
+        return node.negate ? !found : found;
+      }
+      if (node.type === 'between') {
+        const value = evaluateExpression(node.left, context, group, sources, output);
+        const low = evaluateExpression(node.low, context, group, sources, output);
+        const high = evaluateExpression(node.high, context, group, sources, output);
+        const found = compareValues(value, low, '>=') && compareValues(value, high, '<=');
+        return node.negate ? !found : found;
+      }
+      if (node.type === 'binary') {
+        if (node.operator === 'and') return sqlTruthy(evaluateExpression(node.left, context, group, sources, output)) && sqlTruthy(evaluateExpression(node.right, context, group, sources, output));
+        if (node.operator === 'or') return sqlTruthy(evaluateExpression(node.left, context, group, sources, output)) || sqlTruthy(evaluateExpression(node.right, context, group, sources, output));
+        const left = evaluateExpression(node.left, context, group, sources, output);
+        const right = evaluateExpression(node.right, context, group, sources, output);
+        if (['=', '!=', '<>', '<', '<=', '>', '>='].includes(node.operator)) return compareValues(left, right, node.operator);
+        if (node.operator === 'like') return left != null && right != null && likePattern(right).test(String(left));
+        if (node.operator === 'not like') return !(left != null && right != null && likePattern(right).test(String(left)));
+        if (left == null || right == null) return null;
+        if (node.operator === '||') return String(left) + String(right);
+        if (node.operator === '+') return Number(left) + Number(right);
+        if (node.operator === '-') return Number(left) - Number(right);
+        if (node.operator === '*') return Number(left) * Number(right);
+        if (node.operator === '/') {
+          if (Number(right) === 0) throw new SqlPlaygroundError('Division by zero.');
+          return Number(left) / Number(right);
+        }
+        if (node.operator === '%') return Number(left) % Number(right);
+      }
+      if (node.type === 'call') {
+        if (AGGREGATE_FUNCTIONS.has(node.name)) {
+          const rows = group || [];
+          let values = node.args[0]?.type === 'wildcard'
+            ? rows.map(() => 1)
+            : rows.map((row) => evaluateExpression(node.args[0], row, null, sources)).filter((value) => value != null);
+          if (node.distinct) values = [...new Set(values.map((value) => JSON.stringify(value)))].map((value) => JSON.parse(value));
+          if (node.name === 'count') return values.length;
+          if (!values.length) return null;
+          if (node.name === 'sum') return values.reduce((sum, value) => sum + Number(value), 0);
+          if (node.name === 'avg') return values.reduce((sum, value) => sum + Number(value), 0) / values.length;
+          if (node.name === 'min') return values.reduce((result, value) => value < result ? value : result);
+          if (node.name === 'max') return values.reduce((result, value) => value > result ? value : result);
+        }
+        const args = node.args.map((arg) => evaluateExpression(arg, context, group, sources, output));
+        if (node.name === 'lower') return args[0] == null ? null : String(args[0]).toLowerCase();
+        if (node.name === 'upper') return args[0] == null ? null : String(args[0]).toUpperCase();
+        if (node.name === 'length') return args[0] == null ? null : String(args[0]).length;
+        if (node.name === 'abs') return args[0] == null ? null : Math.abs(Number(args[0]));
+        if (node.name === 'round') return args[0] == null ? null : Number(Number(args[0]).toFixed(Number(args[1] || 0)));
+        if (node.name === 'coalesce') return args.find((value) => value != null) ?? null;
+        if (node.name === 'concat') return args.filter((value) => value != null).join('');
+        throw new SqlPlaygroundError(`Function “${node.name}” is not supported. Try COUNT, SUM, AVG, MIN, MAX, LOWER, UPPER, LENGTH, ROUND, COALESCE, or CONCAT.`);
+      }
+      throw new SqlPlaygroundError('This expression is not supported.');
+    }
+
+    function expressionLabel(node) {
+      if (node.type === 'column') return node.name;
+      if (node.type === 'call') return node.name;
+      if (node.type === 'cast') return expressionLabel(node.value);
+      return 'expression';
+    }
+
+    function sameExpression(left, right) { return JSON.stringify(left) === JSON.stringify(right); }
+
+    function groupSafe(node, groupBy) {
+      if (containsAggregate(node) || node.type === 'literal') return true;
+      if (groupBy.some((group) => sameExpression(node, group))) return true;
+      if (node.type === 'column') return groupBy.some((group) => group.type === 'column' && sameExpression(node, group));
+      if (node.type === 'cast' || node.type === 'unary') return groupSafe(node.value, groupBy);
+      if (node.type === 'binary') return groupSafe(node.left, groupBy) && groupSafe(node.right, groupBy);
+      if (node.type === 'call') return node.args.every((arg) => groupSafe(arg, groupBy));
+      return false;
+    }
+
+    function executeBrowserSql(sql) {
+      const query = new SqlParser(sql).parse();
+      const sources = sourceDefinitions(query);
+      if (!query.from && query.select.some((item) => item.expression.type === 'wildcard')) throw new SqlPlaygroundError('SELECT * requires a FROM table.');
+      query.select.forEach((item) => validateExpression(item.expression, sources, { wildcard: item.expression.type === 'wildcard' }));
+      query.joins.forEach((join) => { if (join.on) validateExpression(join.on, sources); });
+      if (query.where) validateExpression(query.where, sources);
+      query.groupBy.forEach((item) => validateExpression(item, sources));
+      if (query.having) validateExpression(query.having, sources);
+      const outputAliases = new Set(query.select.map((item) => item.alias).filter(Boolean));
+      query.orderBy.forEach(({ expression }) => {
+        if (!(expression.type === 'column' && !expression.qualifier && outputAliases.has(expression.name))) validateExpression(expression, sources);
+      });
+      if (query.where && containsAggregate(query.where)) throw new SqlPlaygroundError('Aggregate functions belong in HAVING, not WHERE.');
+      if (query.joins.some((join) => join.on && containsAggregate(join.on))) throw new SqlPlaygroundError('Aggregate functions are not supported in JOIN conditions.');
+
+      let contexts = query.from
+        ? sources[0].table.rows.map((row) => ({ sources: [{ alias: sources[0].ref.alias, row: normalizeTableRow(sources[0].table, row) }] }))
+        : [{ sources: [] }];
+
+      query.joins.forEach((join, joinIndex) => {
+        const definition = sources[joinIndex + 1];
+        const rightRows = definition.table.rows.map((row) => normalizeTableRow(definition.table, row));
+        const joined = [];
+        contexts.forEach((left) => {
+          let matched = false;
+          rightRows.forEach((right) => {
+            const candidate = { sources: [...left.sources, { alias: definition.ref.alias, row: right }] };
+            if (join.type === 'cross' || sqlTruthy(evaluateExpression(join.on, candidate, null, sources))) {
+              joined.push(candidate);
+              matched = true;
+            }
+          });
+          if (!matched && join.type === 'left') {
+            const empty = Object.fromEntries(definition.table.fields.map((field) => [field.name, null]));
+            joined.push({ sources: [...left.sources, { alias: definition.ref.alias, row: empty }] });
+          }
+        });
+        contexts = joined;
+      });
+
+      if (query.where) contexts = contexts.filter((context) => sqlTruthy(evaluateExpression(query.where, context, null, sources)));
+      const aggregateMode = query.groupBy.length > 0
+        || query.select.some((item) => containsAggregate(item.expression))
+        || containsAggregate(query.having)
+        || query.orderBy.some((item) => containsAggregate(item.expression));
+      if (aggregateMode) {
+        query.select.forEach((item) => {
+          if (item.expression.type === 'wildcard') throw new SqlPlaygroundError('SELECT * cannot be mixed with grouping or aggregates; list the result columns.');
+          if (!groupSafe(item.expression, query.groupBy)) throw new SqlPlaygroundError(`Column expression “${item.alias || expressionLabel(item.expression)}” must appear in GROUP BY or be aggregated.`);
+        });
+        if (query.having && !groupSafe(query.having, query.groupBy)) throw new SqlPlaygroundError('HAVING columns must appear in GROUP BY or be aggregated.');
+      }
+
+      let groups;
+      if (query.groupBy.length) {
+        const grouped = new Map();
+        contexts.forEach((context) => {
+          const key = JSON.stringify(query.groupBy.map((item) => evaluateExpression(item, context, null, sources)));
+          if (!grouped.has(key)) grouped.set(key, []);
+          grouped.get(key).push(context);
+        });
+        groups = [...grouped.values()];
+      } else if (aggregateMode) groups = [contexts];
+      else groups = contexts.map((context) => [context]);
+
+      const expandedSelect = [];
+      query.select.forEach((item) => {
+        if (item.expression.type !== 'wildcard') { expandedSelect.push(item); return; }
+        const matching = item.expression.qualifier
+          ? sources.filter(({ ref, table }) => ref.alias === item.expression.qualifier || table.name === item.expression.qualifier)
+          : sources;
+        if (!matching.length) throw new SqlPlaygroundError(`Unknown table or alias “${item.expression.qualifier}”.`);
+        matching.forEach(({ ref, table }) => table.fields.forEach((field) => expandedSelect.push({
+          expression: { type: 'column', qualifier: ref.alias, name: field.name }, alias: null
+        })));
+      });
+
+      const columns = expandedSelect.map((item, index) => {
+        const source = item.expression.type === 'column' ? resolveColumnSource(item.expression, sources) : null;
+        return {
+          name: item.alias || expressionLabel(item.expression) || `column_${index + 1}`,
+          badges: source?.field.badges || []
+        };
+      });
+
+      let records = groups.filter((group) => {
+        if (!query.having) return true;
+        return sqlTruthy(evaluateExpression(query.having, group[0] || null, group, sources));
+      }).map((group) => {
+        const context = group[0] || null;
+        const values = expandedSelect.map((item) => evaluateExpression(item.expression, context, group, sources));
+        const output = new Map(columns.map((column, index) => [column.name, values[index]]));
+        return { context, group, values, output };
+      });
+
+      if (query.distinct) {
+        const seen = new Set();
+        records = records.filter((record) => {
+          const key = JSON.stringify(record.values);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+
+      if (query.orderBy.length) {
+        records.sort((left, right) => {
+          for (const order of query.orderBy) {
+            let a;
+            let b;
+            if (order.expression.type === 'literal' && Number.isInteger(order.expression.value)) {
+              a = left.values[order.expression.value - 1];
+              b = right.values[order.expression.value - 1];
+            } else {
+              a = evaluateExpression(order.expression, left.context, left.group, sources, left.output);
+              b = evaluateExpression(order.expression, right.context, right.group, sources, right.output);
+            }
+            if (a === b) continue;
+            const direction = order.direction === 'desc' ? -1 : 1;
+            if (a == null) return direction;
+            if (b == null) return -direction;
+            return (a < b ? -1 : 1) * direction;
+          }
+          return 0;
+        });
+      }
+
+      records = records.slice(query.offset, query.limit == null ? undefined : query.offset + query.limit);
+      return { columns, rows: records.map((record) => record.values) };
+    }
 
     function iconGrip() {
       return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="8" cy="6" r="1.5"></circle><circle cx="16" cy="6" r="1.5"></circle><circle cx="8" cy="12" r="1.5"></circle><circle cx="16" cy="12" r="1.5"></circle><circle cx="8" cy="18" r="1.5"></circle><circle cx="16" cy="18" r="1.5"></circle></svg>';
@@ -1068,8 +2070,10 @@
       const table = schema.find((item) => item.name === name);
       if (!table) return;
       selectedTable = name;
+      dataPanelMode = 'sample';
       cards.forEach((card, cardName) => card.classList.toggle('active', cardName === name));
       elements.dataPanelTitle.textContent = table.name;
+      elements.closeData.setAttribute('aria-label', 'Close sample data');
       elements.dataTable.replaceChildren();
 
       const thead = document.createElement('thead');
@@ -1106,15 +2110,54 @@
       elements.dataPanel.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
     }
 
+    function showQueryResults(result) {
+      selectedTable = null;
+      dataPanelMode = 'query';
+      cards.forEach((card) => card.classList.remove('active'));
+      elements.dataPanelTitle.textContent = 'Query result';
+      elements.closeData.setAttribute('aria-label', 'Close query results');
+      elements.dataTable.replaceChildren();
+
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      result.columns.forEach((column) => {
+        const th = document.createElement('th');
+        th.scope = 'col';
+        th.textContent = column.name;
+        if (column.badges.includes('pk')) th.classList.add('data-col-pk');
+        else if (column.badges.includes('fk')) th.classList.add('data-col-fk');
+        headerRow.append(th);
+      });
+      thead.append(headerRow);
+
+      const tbody = document.createElement('tbody');
+      result.rows.forEach((values) => {
+        const row = document.createElement('tr');
+        values.forEach((value, index) => {
+          const cell = document.createElement('td');
+          cell.textContent = value == null ? 'NULL' : String(value);
+          const badges = result.columns[index].badges;
+          if (badges.includes('pk')) cell.classList.add('data-col-pk');
+          else if (badges.includes('fk')) cell.classList.add('data-col-fk');
+          row.append(cell);
+        });
+        tbody.append(row);
+      });
+      elements.dataTable.append(thead, tbody);
+      elements.dataPanel.hidden = false;
+      elements.dataPanel.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
+    }
+
     function closeDataPanel({ restoreFocus = true } = {}) {
       if (elements.dataPanel.hidden) return;
       clearDataColumnHighlight();
       elements.dataPanel.hidden = true;
       const previous = selectedTable;
+      const closedMode = dataPanelMode;
       selectedTable = null;
       cards.forEach((card) => card.classList.remove('active'));
       if (restoreFocus && previous && !cards.get(previous).hidden) cards.get(previous).focus({ preventScroll: true });
-      announce('Sample data closed');
+      announce(closedMode === 'query' ? 'Query results closed' : 'Sample data closed');
     }
 
     function fieldElement(tableName, fieldName) {
@@ -1330,6 +2373,53 @@
       pan = null;
     }
 
+    function openSqlDrawer() {
+      elements.sqlDrawer.hidden = false;
+      elements.openSql.hidden = true;
+      elements.openSql.setAttribute('aria-expanded', 'true');
+      requestAnimationFrame(() => {
+        elements.sqlEditor.focus();
+        scheduleConnectors();
+      });
+      announce('SQL playground opened');
+    }
+
+    function closeSqlDrawer({ restoreFocus = true } = {}) {
+      if (elements.sqlDrawer.hidden) return;
+      elements.sqlDrawer.hidden = true;
+      elements.openSql.hidden = false;
+      elements.openSql.setAttribute('aria-expanded', 'false');
+      if (restoreFocus) elements.openSql.focus({ preventScroll: true });
+      scheduleConnectors();
+      announce('SQL playground closed');
+    }
+
+    function resetSqlEditor() {
+      elements.sqlEditor.value = STARTER_QUERY;
+      updateSqlHighlight();
+      elements.sqlMessage.textContent = '';
+      elements.sqlMessage.classList.remove('error');
+      elements.sqlEditor.focus();
+    }
+
+    function runSqlQuery() {
+      elements.sqlMessage.textContent = '';
+      elements.sqlMessage.classList.remove('error');
+      try {
+        const sql = elements.sqlEditor.value.trim();
+        if (!sql) throw new SqlPlaygroundError('Enter a SELECT query.');
+        const result = executeBrowserSql(sql);
+        showQueryResults(result);
+        elements.sqlMessage.textContent = `${result.rows.length} ${result.rows.length === 1 ? 'row' : 'rows'}`;
+        announce(`Query complete: ${result.rows.length} ${result.rows.length === 1 ? 'row' : 'rows'}`);
+      } catch (error) {
+        const message = error instanceof SqlPlaygroundError ? error.message : 'The query could not be evaluated.';
+        elements.sqlMessage.textContent = message;
+        elements.sqlMessage.classList.add('error');
+        announce(`Query error: ${message}`);
+      }
+    }
+
     function reducedMotion() { return matchMedia('(prefers-reduced-motion: reduce)').matches; }
     function announce(message) { elements.announcer.textContent = message; }
 
@@ -1347,10 +2437,25 @@
     elements.relationshipsToggle.addEventListener('click', toggleRelationships);
     elements.themeToggle.addEventListener('click', toggleTheme);
     elements.closeData.addEventListener('click', () => closeDataPanel());
+    elements.openSql.addEventListener('click', openSqlDrawer);
+    elements.closeSql.addEventListener('click', () => closeSqlDrawer());
+    elements.runSql.addEventListener('click', runSqlQuery);
+    elements.resetSql.addEventListener('click', resetSqlEditor);
+    elements.sqlEditor.addEventListener('input', updateSqlHighlight);
+    elements.sqlEditor.addEventListener('scroll', syncSqlHighlightScroll, { passive: true });
+    elements.sqlEditor.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        runSqlQuery();
+      }
+    });
 
     document.addEventListener('keydown', (event) => {
       const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
-      if (event.key === 'Escape' && !elements.dataPanel.hidden) {
+      if (event.key === 'Escape' && !elements.sqlDrawer.hidden) {
+        event.preventDefault();
+        closeSqlDrawer();
+      } else if (event.key === 'Escape' && !elements.dataPanel.hidden) {
         event.preventDefault();
         closeDataPanel();
       } else if (!typing && (event.key === '+' || event.key === '=')) {
@@ -1378,6 +2483,8 @@
       }, 80);
     });
 
+    elements.sqlEditor.value = STARTER_QUERY;
+    updateSqlHighlight();
     renderCards();
     updateStageSize();
     elements.relationshipsToggle.setAttribute('aria-pressed', String(relationshipsVisible));
