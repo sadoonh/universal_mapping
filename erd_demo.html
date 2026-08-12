@@ -159,14 +159,6 @@
 
     .tool-button svg { width: 15px; height: 15px; flex: none; }
 
-    .zoom-readout {
-      min-width: 44px;
-      color: var(--muted);
-      font-size: 0.72rem;
-      font-variant-numeric: tabular-nums;
-      text-align: center;
-    }
-
     .diagram-viewport {
       position: relative;
       height: clamp(450px, 61vh, 680px);
@@ -494,22 +486,9 @@
 
     <section class="viewer" aria-label="Universal Mapping entity relationship diagram viewer">
       <div class="toolbar" role="toolbar" aria-label="Diagram controls">
-        <div class="tool-group" aria-label="Zoom controls">
-          <button class="tool-button" id="zoomOut" type="button" aria-label="Zoom out" title="Zoom out (−)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M8 11h6m6 9-4-4"></path></svg>
-          </button>
-          <span class="zoom-readout" id="zoomReadout" aria-live="polite">100%</span>
-          <button class="tool-button" id="zoomIn" type="button" aria-label="Zoom in" title="Zoom in (+)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M11 8v6M8 11h6m6 9-4-4"></path></svg>
-          </button>
+        <div class="tool-group" aria-label="View controls">
           <button class="tool-button" id="fitView" type="button" aria-label="Fit diagram to view" title="Fit diagram to view (0)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M8 21H3v-5m13 5h5v-5"></path></svg>
-          </button>
-        </div>
-
-        <div class="tool-group" aria-label="Layout controls">
-          <button class="tool-button" id="autoLayout" type="button" aria-label="Restore the default Universal Mapping table arrangement" title="Restore the default table arrangement">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="7" height="6" rx="1"></rect><rect x="14" y="14" width="7" height="6" rx="1"></rect><path d="M10 7h4a3 3 0 0 1 3 3v4"></path></svg>
           </button>
           <button class="tool-button danger" id="resetAll" type="button" aria-label="Reset saved Universal Mapping layout and viewer preferences" title="Reset saved layout and viewer preferences">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4v6h6M5.5 15a8 8 0 1 0 .5-7l-2 2"></path></svg>
@@ -652,7 +631,6 @@
       stage: document.getElementById('stage'),
       scene: document.getElementById('scene'),
       connectors: document.getElementById('connectors'),
-      zoomReadout: document.getElementById('zoomReadout'),
       dataPanel: document.getElementById('dataPanel'),
       dataPanelTitle: document.getElementById('dataPanelTitle'),
       dataTable: document.getElementById('dataTable'),
@@ -994,7 +972,6 @@
       elements.scene.style.transform = `scale(${zoom})`;
       elements.stage.style.width = `${SCENE.width * zoom}px`;
       elements.stage.style.height = `${SCENE.height * zoom}px`;
-      elements.zoomReadout.textContent = `${Math.round(zoom * 100)}%`;
       scheduleConnectors();
     }
 
@@ -1158,10 +1135,7 @@
     elements.viewport.addEventListener('pointerup', endPan);
     elements.viewport.addEventListener('pointercancel', endPan);
 
-    document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom - 0.1));
-    document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom + 0.1));
     document.getElementById('fitView').addEventListener('click', () => fitToView());
-    document.getElementById('autoLayout').addEventListener('click', () => autoLayout());
     document.getElementById('resetAll').addEventListener('click', resetAll);
     elements.relationshipsToggle.addEventListener('click', toggleRelationships);
     elements.themeToggle.addEventListener('click', toggleTheme);
