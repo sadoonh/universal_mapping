@@ -8,7 +8,7 @@ Universal Mapping is a small schema-design repository for describing how technol
 | --- | --- |
 | `universal_mapping_schema.xlsx` | Canonical workbook representation of the proposed schema and sample data. |
 | `README.md` | Human-readable inventory of the workbook structure and evidence-supported relationships. |
-| `AGENTS.md` / `CLAUDE.md` | Concise contributor guidance (`CLAUDE.md` is a symlink to `AGENTS.md`). |
+| `AGENTS.md` | Concise contributor guidance. |
 | `universal_uid.sql` | SQL placeholder containing only a comment for future `universal_uid` DDL. |
 | `domain_variable.sql` | SQL placeholder containing only a comment for future `domain_variable` DDL. |
 | `estimation_template.sql` | SQL placeholder containing only a comment for future `estimation_template` DDL. |
