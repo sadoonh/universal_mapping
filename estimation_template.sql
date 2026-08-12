@@ -1,7 +1,7 @@
 CREATE TABLE estimation_template (
     template_id     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     technology      TEXT NOT NULL,
-    variable_group  TEXT NOT NULL,
+    estimation_phase  TEXT NOT NULL,
     template_name   TEXT NOT NULL,
     valid_from      DATE NOT NULL,
     valid_to        DATE,
@@ -9,7 +9,7 @@ CREATE TABLE estimation_template (
     CONSTRAINT uq_estimation_template
         UNIQUE (
             technology,
-            variable_group,
+            estimation_phase,
             template_name
         ),
 

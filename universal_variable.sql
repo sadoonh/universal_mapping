@@ -1,8 +1,8 @@
--- DDL definitions for universal_uid.
-CREATE TABLE universal_uid (
+-- DDL definitions for universal_variable.
+CREATE TABLE universal_variable (
     universal_uid INTEGER PRIMARY KEY,
     datatype      TEXT NOT NULL,
-    context       TEXT NOT NULL,
+    description   TEXT NOT NULL,
     unit          TEXT,
     domain_uid_list   TEXT[]
 );

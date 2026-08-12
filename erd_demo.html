@@ -898,19 +898,19 @@
     // SQL DDL is authoritative for structure; workbook values are representative rows.
     const schema = [
       {
-        name: 'universal_uid',
+        name: 'universal_variable',
         fields: [
           { name: 'universal_uid', type: 'INTEGER', badges: ['pk'] },
           { name: 'datatype', type: 'TEXT', badges: ['nn'] },
-          { name: 'context', type: 'TEXT', badges: ['nn'] },
+          { name: 'description', type: 'TEXT', badges: ['nn'] },
           { name: 'unit', type: 'TEXT' },
           { name: 'domain_uid_list', type: 'TEXT[]' }
         ],
         constraints: [],
         rows: [
-          { universal_uid: '1', datatype: 'NUMERIC', context: 'Installed capacity', unit: 'MW', domain_uid_list: '{S_A_1, B_A_1, W_A_1}' },
-          { universal_uid: '2', datatype: 'NUMERIC', context: 'Total project cost', unit: 'USD', domain_uid_list: '{S_A_2, B_A_2, W_A_2}' },
-          { universal_uid: '3', datatype: 'DATE', context: 'Commercial operation date', unit: 'NULL', domain_uid_list: '{S_A_3, B_A_3}' }
+          { universal_uid: '1', datatype: 'NUMERIC', description: 'Installed capacity', unit: 'MW', domain_uid_list: '{S_A_1, B_A_1, W_A_1}' },
+          { universal_uid: '2', datatype: 'NUMERIC', description: 'Total project cost', unit: 'USD', domain_uid_list: '{S_A_2, B_A_2, W_A_2}' },
+          { universal_uid: '3', datatype: 'DATE', description: 'Commercial operation date', unit: 'NULL', domain_uid_list: '{S_A_3, B_A_3}' }
         ]
       },
       {
@@ -919,21 +919,21 @@
           { name: 'domain_uid', type: 'TEXT', badges: ['pk'] },
           { name: 'universal_uid', type: 'INTEGER', badges: ['fk', 'nn'] },
           { name: 'technology', type: 'TEXT', badges: ['nn'] },
-          { name: 'variable_group', type: 'TEXT', badges: ['nn'] },
+          { name: 'estimation_phase', type: 'TEXT', badges: ['nn'] },
           { name: 'name', type: 'TEXT', badges: ['nn'] },
           { name: 'example_value', type: 'TEXT' },
           { name: 'datatype', type: 'TEXT' }
         ],
         constraints: [
-          { name: 'uq_domain_variable_mapping', definition: 'UNIQUE (universal_uid, technology, variable_group)' }
+          { name: 'uq_domain_variable_mapping', definition: 'UNIQUE (universal_uid, technology, estimation_phase)' }
         ],
         rows: [
-          { domain_uid: 'S_A_1', universal_uid: '1', technology: 'Solar', variable_group: 'Assumption', name: 'Solar Capacity', example_value: '250', datatype: 'NUMERIC' },
-          { domain_uid: 'B_A_1', universal_uid: '1', technology: 'Battery', variable_group: 'Assumption', name: 'Battery Capacity', example_value: '180', datatype: 'NUMERIC' },
-          { domain_uid: 'W_A_1', universal_uid: '1', technology: 'Wind', variable_group: 'Assumption', name: 'Wind Capacity', example_value: '400', datatype: 'NUMERIC' },
-          { domain_uid: 'S_A_2', universal_uid: '2', technology: 'Solar', variable_group: 'Assumption', name: 'Project Capacity', example_value: '30000', datatype: 'NUMERIC' },
-          { domain_uid: 'S_E_1', universal_uid: '7', technology: 'Solar', variable_group: 'Preestimation', name: 'Preliminary Capacity', example_value: '240', datatype: 'NUMERIC' },
-          { domain_uid: 'S_M_1_1', universal_uid: '12', technology: 'Solar', variable_group: 'Model', name: 'Modeled Capacity', example_value: '248', datatype: 'NUMERIC' }
+          { domain_uid: 'S_A_1', universal_uid: '1', technology: 'Solar', estimation_phase: 'Assumption', name: 'Solar Capacity', example_value: '250', datatype: 'NUMERIC' },
+          { domain_uid: 'B_A_1', universal_uid: '1', technology: 'Battery', estimation_phase: 'Assumption', name: 'Battery Capacity', example_value: '180', datatype: 'NUMERIC' },
+          { domain_uid: 'W_A_1', universal_uid: '1', technology: 'Wind', estimation_phase: 'Assumption', name: 'Wind Capacity', example_value: '400', datatype: 'NUMERIC' },
+          { domain_uid: 'S_A_2', universal_uid: '2', technology: 'Solar', estimation_phase: 'Assumption', name: 'Project Capacity', example_value: '30000', datatype: 'NUMERIC' },
+          { domain_uid: 'S_E_1', universal_uid: '7', technology: 'Solar', estimation_phase: 'Preestimation', name: 'Preliminary Capacity', example_value: '240', datatype: 'NUMERIC' },
+          { domain_uid: 'S_M_1_1', universal_uid: '12', technology: 'Solar', estimation_phase: 'Model', name: 'Modeled Capacity', example_value: '248', datatype: 'NUMERIC' }
         ]
       },
       {
@@ -941,28 +941,28 @@
         fields: [
           { name: 'template_id', type: 'INTEGER', badges: ['pk', 'id'] },
           { name: 'technology', type: 'TEXT', badges: ['nn'] },
-          { name: 'variable_group', type: 'TEXT', badges: ['nn'] },
+          { name: 'estimation_phase', type: 'TEXT', badges: ['nn'] },
           { name: 'template_name', type: 'TEXT', badges: ['nn'] },
           { name: 'valid_from', type: 'DATE', badges: ['nn'] },
           { name: 'valid_to', type: 'DATE' }
         ],
         constraints: [
-          { name: 'uq_estimation_template', definition: 'UNIQUE (technology, variable_group, template_name)' },
+          { name: 'uq_estimation_template', definition: 'UNIQUE (technology, estimation_phase, template_name)' },
           { name: 'chk_estimation_template_dates', definition: 'CHECK (valid_to IS NULL OR valid_to >= valid_from)' }
         ],
         rows: [
-          { template_id: '101', technology: 'Solar', variable_group: 'Assumption', template_name: '2024-01-A', valid_from: '2024-01-01', valid_to: '2024-08-31' },
-          { template_id: '102', technology: 'Solar', variable_group: 'Assumption', template_name: '2024-09-B', valid_from: '2024-09-01', valid_to: 'NULL' },
-          { template_id: '103', technology: 'Solar', variable_group: 'Preestimation', template_name: '2024-04-A', valid_from: '2024-04-01', valid_to: 'NULL' },
-          { template_id: '104', technology: 'Solar', variable_group: 'Model', template_name: '2024-06-C', valid_from: '2024-06-01', valid_to: 'NULL' },
-          { template_id: '201', technology: 'Battery', variable_group: 'Assumption', template_name: '2024-03-A', valid_from: '2024-03-01', valid_to: '2025-01-31' },
-          { template_id: '202', technology: 'Battery', variable_group: 'Assumption', template_name: '2025-02-B', valid_from: '2025-02-01', valid_to: 'NULL' }
+          { template_id: '101', technology: 'Solar', estimation_phase: 'Assumption', template_name: '2024-01-A', valid_from: '2024-01-01', valid_to: '2024-08-31' },
+          { template_id: '102', technology: 'Solar', estimation_phase: 'Assumption', template_name: '2024-09-B', valid_from: '2024-09-01', valid_to: 'NULL' },
+          { template_id: '103', technology: 'Solar', estimation_phase: 'Preestimation', template_name: '2024-04-A', valid_from: '2024-04-01', valid_to: 'NULL' },
+          { template_id: '104', technology: 'Solar', estimation_phase: 'Model', template_name: '2024-06-C', valid_from: '2024-06-01', valid_to: 'NULL' },
+          { template_id: '201', technology: 'Battery', estimation_phase: 'Assumption', template_name: '2024-03-A', valid_from: '2024-03-01', valid_to: '2025-01-31' },
+          { template_id: '202', technology: 'Battery', estimation_phase: 'Assumption', template_name: '2025-02-B', valid_from: '2025-02-01', valid_to: 'NULL' }
         ]
       }
     ];
 
     const relationships = [
-      { from: 'universal_uid', fromField: 'universal_uid', to: 'domain_variable', toField: 'universal_uid', label: '1 : N' }
+      { from: 'universal_variable', fromField: 'universal_uid', to: 'domain_variable', toField: 'universal_uid', label: '1 : N' }
     ];
 
     const SCENE = { width: 1260, height: 680 };
@@ -970,7 +970,7 @@
     const CANVAS_MARGIN = 240;
     const CANVAS_GROW = 1200;
     const DEFAULT_POSITIONS = {
-      universal_uid: { x: 40, y: 142 },
+      universal_variable: { x: 40, y: 142 },
       domain_variable: { x: 462, y: 64 },
       estimation_template: { x: 884, y: 82 }
     };
@@ -1053,7 +1053,7 @@
 FROM domain_variable dv
 JOIN estimation_template et
     ON dv.technology = et.technology
-   AND dv.variable_group = et.variable_group
+   AND dv.estimation_phase = et.estimation_phase
 WHERE et.valid_to IS NULL;`;
 
     const SQL_HIGHLIGHT_KEYWORDS = new Set((`
@@ -1515,7 +1515,7 @@ WHERE et.valid_to IS NULL;`;
       const aliases = new Set();
       return refs.map((ref) => {
         const table = schema.find((item) => item.name.toLowerCase() === ref.name.toLowerCase());
-        if (!table) throw new SqlPlaygroundError(`Unknown table “${ref.name}”. Use universal_uid, domain_variable, or estimation_template.`);
+        if (!table) throw new SqlPlaygroundError(`Unknown table “${ref.name}”. Use universal_variable, domain_variable, or estimation_template.`);
         if (aliases.has(ref.alias)) throw new SqlPlaygroundError(`Table alias “${ref.alias}” is used more than once.`);
         aliases.add(ref.alias);
         return { ref, table };
