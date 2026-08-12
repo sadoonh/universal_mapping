@@ -383,17 +383,6 @@
     .badge.fk { background: var(--fk-soft); color: var(--fk); }
     .badge.nn, .badge.id { background: var(--accent-soft); color: var(--accent); }
 
-    .constraint-list {
-      margin: 0;
-      padding: 9px 13px 11px 28px;
-      border-top: 1px solid var(--border);
-      color: var(--muted);
-      font: 0.64rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    }
-
-    .constraint-list li + li { margin-top: 3px; }
-    .constraint-name { color: var(--relationship); font-weight: 800; }
-
     .no-results {
       position: absolute;
       top: 50%;
@@ -850,20 +839,6 @@
         });
 
         card.append(header, list);
-        if (table.constraints.length) {
-          const constraintList = document.createElement('ul');
-          constraintList.className = 'constraint-list';
-          constraintList.setAttribute('aria-label', `${table.name} table constraints`);
-          table.constraints.forEach((constraint) => {
-            const item = document.createElement('li');
-            const name = document.createElement('span');
-            name.className = 'constraint-name';
-            name.textContent = constraint.name;
-            item.append(name, `: ${constraint.definition}`);
-            constraintList.append(item);
-          });
-          card.append(constraintList);
-        }
         elements.scene.append(card);
         cards.set(table.name, card);
 
