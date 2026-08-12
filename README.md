@@ -8,6 +8,7 @@ Universal Mapping is a small schema-design repository for describing how technol
 | --- | --- |
 | `universal_mapping_schema.xlsx` | Canonical workbook representation of the proposed schema and sample data. |
 | `README.md` | Human-readable inventory of the workbook structure and evidence-supported relationships. |
+| `erd_demo.html` | Standalone interactive ERD viewer using a separate fictional store schema for demonstration. |
 | `AGENTS.md` | Concise contributor guidance. |
 | `universal_uid.sql` | SQL placeholder containing only a comment for future `universal_uid` DDL. |
 | `domain_variable.sql` | SQL placeholder containing only a comment for future `domain_variable` DDL. |
@@ -63,6 +64,10 @@ A catalog of named templates by technology and variable group, with apparent eff
 | `valid_to` | ISO-formatted date text or the literal text `NULL`, apparently indicating an open-ended range; that interpretation is inferred, not defined. |
 
 For the sampled `Assumption` rows within a technology, adjacent date ranges do not overlap. The small sample does not establish a general non-overlap, ordering, or uniqueness rule.
+
+## Interactive ERD demo
+
+Open [`erd_demo.html`](erd_demo.html) directly in a modern browser; it has no server or external dependencies. The demo provides draggable tables, live relationship connectors, zoom and fit controls, search, theme and relationship toggles, persisted layout preferences, and keyboard-accessible sample-row viewing. Its small fictional store schema is UI demonstration data and does **not** represent the workbook schema documented below.
 
 ## Maintenance and use
 
