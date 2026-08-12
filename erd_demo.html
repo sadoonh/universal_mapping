@@ -91,69 +91,16 @@
     .app-shell {
       width: min(1440px, 100%);
       margin: 0 auto;
-      padding: 28px clamp(14px, 3vw, 40px) 40px;
+      padding: 16px clamp(14px, 3vw, 40px) 28px;
     }
 
-    .topbar {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 24px;
-      margin-bottom: 18px;
-    }
-
-    .eyebrow {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 0 0 5px;
-      color: var(--accent);
-      font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.13em;
-      text-transform: uppercase;
-    }
-
-    .eyebrow::before {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--pk);
-      box-shadow: 0 0 0 4px var(--pk-soft);
-      content: "";
-    }
+    .topbar { margin-bottom: 10px; }
 
     h1 {
       margin: 0;
-      font-size: clamp(1.65rem, 4vw, 2.35rem);
-      line-height: 1.12;
-      letter-spacing: -0.035em;
-    }
-
-    .subtitle {
-      max-width: 760px;
-      margin: 7px 0 0;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-
-    .schema-note {
-      max-width: 820px;
-      margin: 7px 0 0;
-      color: var(--subtle);
-      font-size: 0.75rem;
-    }
-
-    .demo-chip {
-      flex: none;
-      padding: 7px 11px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      background: var(--surface);
-      color: var(--muted);
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
+      font-size: clamp(1.25rem, 3vw, 1.7rem);
+      line-height: 1.15;
+      letter-spacing: -0.025em;
     }
 
     .viewer {
@@ -481,7 +428,7 @@
       font-size: 0.72rem;
     }
 
-    .legend, .hints { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .legend { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
     .legend-item { display: inline-flex; align-items: center; gap: 5px; }
     .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
     .legend-dot.pk { background: var(--pk); }
@@ -573,19 +520,15 @@
       .search-wrap { max-width: none; }
       .toolbar > .tool-group:last-child { margin-left: auto; }
       .tool-button .optional-label { display: none; }
-      .hints .secondary-hint { display: none; }
     }
 
     @media (max-width: 620px) {
-      .app-shell { padding-top: 20px; }
-      .topbar { align-items: flex-start; }
-      .demo-chip { display: none; }
+      .app-shell { padding-top: 12px; }
       .toolbar { gap: 7px; padding: 9px; }
       .search-wrap { flex-basis: 100%; order: -1; }
       .tool-group { flex: 1; justify-content: center; }
       .diagram-viewport { height: 54vh; min-height: 390px; }
       .viewer-footer { align-items: flex-start; }
-      .hints { display: none; }
       .data-table th, .data-table td { padding: 9px 12px; }
     }
 
@@ -602,13 +545,7 @@
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">Interactive schema explorer</p>
-        <h1>Universal Mapping</h1>
-        <p class="subtitle">Explore the workbook tables through their SQL DDL, inspect representative rows, and arrange the schema around its declared relationship.</p>
-        <p class="schema-note">Structure and constraints follow the supplied DDL. Rows follow the workbook; its literal <code>NULL</code> text and brace-delimited array notation are displayed unchanged.</p>
-      </div>
-      <span class="demo-chip">Workbook + DDL</span>
+      <h1>Universal Mapping</h1>
     </header>
 
     <section class="viewer" aria-label="Universal Mapping entity relationship diagram viewer">
@@ -616,7 +553,7 @@
         <label class="search-wrap">
           <span class="sr-only">Filter tables or fields</span>
           <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
-          <input class="search-input" id="searchInput" type="search" placeholder="Filter tables or fields…" autocomplete="off">
+          <input class="search-input" id="searchInput" type="search" placeholder="Search" autocomplete="off">
           <button class="clear-search" id="clearSearch" type="button" aria-label="Clear table filter" title="Clear filter">×</button>
         </label>
 
@@ -630,29 +567,25 @@
           </button>
           <button class="tool-button" id="fitView" type="button" aria-label="Fit diagram to view" title="Fit diagram to view (0)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M8 21H3v-5m13 5h5v-5"></path></svg>
-            <span class="optional-label">Fit</span>
           </button>
         </div>
 
         <div class="tool-group" aria-label="Layout controls">
           <button class="tool-button" id="autoLayout" type="button" aria-label="Restore the default Universal Mapping table arrangement" title="Restore the default table arrangement">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="7" height="6" rx="1"></rect><rect x="14" y="14" width="7" height="6" rx="1"></rect><path d="M10 7h4a3 3 0 0 1 3 3v4"></path></svg>
-            <span class="optional-label">Auto layout</span>
           </button>
           <button class="tool-button danger" id="resetAll" type="button" aria-label="Reset saved Universal Mapping layout and viewer preferences" title="Reset saved layout and viewer preferences">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4v6h6M5.5 15a8 8 0 1 0 .5-7l-2 2"></path></svg>
-            <span class="optional-label">Reset</span>
           </button>
         </div>
 
         <div class="tool-group" aria-label="Display controls">
           <button class="tool-button" id="relationshipsToggle" type="button" aria-label="Show or hide declared relationships" aria-pressed="true" title="Show or hide relationships (R)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="5" cy="12" r="2"></circle><circle cx="19" cy="7" r="2"></circle><circle cx="19" cy="17" r="2"></circle><path d="M7 12h3a4 4 0 0 0 4-4 1 1 0 0 1 1-1h2M10 12a4 4 0 0 1 4 4 1 1 0 0 0 1 1h2"></path></svg>
-            <span class="optional-label">Relations</span>
           </button>
           <button class="tool-button" id="themeToggle" type="button" title="Switch color theme">
             <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
-            <span class="optional-label" id="themeLabel">Light</span>
+            <span class="sr-only" id="themeLabel">Light</span>
           </button>
         </div>
       </div>
@@ -664,8 +597,7 @@
           </div>
         </div>
         <div class="no-results" id="noResults" role="status">
-          <strong>No matching tables</strong>
-          Try a Universal Mapping table, DDL field, type, or constraint.
+          <strong>No matches</strong>
         </div>
       </div>
 
@@ -674,11 +606,6 @@
           <span class="legend-item"><span class="legend-dot pk"></span>Primary key</span>
           <span class="legend-item"><span class="legend-dot fk"></span>Foreign key</span>
           <span class="legend-item"><span class="badge nn">NN</span>Not null</span>
-        </div>
-        <div class="hints">
-          <span>Drag table headers</span>
-          <span class="secondary-hint"><kbd>Enter</kbd> view rows</span>
-          <span class="secondary-hint"><kbd>/</kbd> filter</span>
         </div>
       </footer>
     </section>
@@ -851,7 +778,7 @@
         card.dataset.table = table.name;
         card.tabIndex = 0;
         card.setAttribute('role', 'button');
-        card.setAttribute('aria-label', `${table.name} table, ${table.fields.length} DDL fields and ${table.rows.length} workbook sample rows. Press Enter to inspect rows.`);
+        card.setAttribute('aria-label', `${table.name}, ${table.fields.length} fields, ${table.rows.length} rows`);
 
         const header = document.createElement('div');
         header.className = 'table-header';
@@ -865,7 +792,7 @@
         title.textContent = table.name;
         const meta = document.createElement('span');
         meta.className = 'table-meta';
-        meta.textContent = `${table.fields.length} fields · ${table.rows.length} sample rows`;
+        meta.textContent = `${table.rows.length} rows`;
         titleWrap.append(title, meta);
 
         const grip = document.createElement('span');
@@ -1028,7 +955,7 @@
       selectedTable = name;
       cards.forEach((card, cardName) => card.classList.toggle('active', cardName === name));
       elements.dataPanelTitle.textContent = table.name;
-      elements.dataPanelSummary.textContent = `${table.rows.length} representative workbook row${table.rows.length === 1 ? '' : 's'} · displayed as supplied`;
+      elements.dataPanelSummary.textContent = `${table.rows.length} row${table.rows.length === 1 ? '' : 's'}`;
       elements.dataTable.replaceChildren();
 
       const thead = document.createElement('thead');
