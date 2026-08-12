@@ -1,79 +1,104 @@
-# Universal Mapping
+# UID Schema Reference
 
-Universal Mapping describes how technology-specific variables map to shared concepts and how estimation templates are cataloged. The Excel workbook contains the proposed tables and representative records. The standalone ERD viewer renders those workbook tables using the corresponding SQL DDL as the authority for names, columns, data types, keys, nullability, uniqueness, checks, identity generation, and relationships.
+This document describes the final three-table schema for universal variables, domain-specific variables, and estimation template history.
 
-## Repository layout
+## 1. `universal_uid`
 
-| File | Role |
-| --- | --- |
-| `universal_mapping_schema.xlsx` | Canonical workbook representation and representative sample rows. |
-| `erd_demo.html` | Standalone interactive viewer of the workbook tables, modeled with the supplied SQL DDL definitions. |
-| `universal_uid.sql` | Repository placeholder reserved for `universal_uid` DDL. |
-| `domain_variable.sql` | Repository placeholder reserved for `domain_variable` DDL. |
-| `estimation_template.sql` | Repository placeholder reserved for `estimation_template` DDL. |
-| `AGENTS.md` | Concise contributor guidance. |
+**Purpose:** Stores the canonical business definition of each universal variable. Each row represents one universal concept that can map to multiple domain-specific UIDs across technologies and variable groups.
 
-The repository SQL files remain placeholders. For this prototype, the viewer was reconciled against the separately supplied corresponding DDL inputs; those inputs define the structure summarized below.
+| Column | Type | Purpose |
+| --- | --- | --- |
+| `universal_uid` | `INTEGER` | Primary key for the canonical variable. This is the stable, organization-wide identifier used to connect equivalent variables across different technologies and variable groups. |
+| `datatype` | `VARCHAR(50)` | Defines the canonical datatype expected for the universal variable, such as decimal, text, or date. |
+| `context` | `TEXT` | Business description of what the universal UID represents. Provides the shared semantic meaning of the variable. |
+| `unit` | `VARCHAR(50)` | Unit of measure for the variable when applicable, such as MW, USD, or %. Can be `NULL` for variables without a unit. |
+| `domain_uids` | `TEXT[]` | Convenience list of all domain-specific UIDs associated with the universal UID, such as `{S_A_1,B_A_1,W_A_1}`. This is a denormalized management/reporting field; `domain_variable` should remain the authoritative source for the mapping. |
 
-## Schema
+### Example
 
-Each worksheet represents one table. Its first row contains column names and subsequent rows are illustrative data, not a complete production dataset.
+| universal_uid | datatype | context | unit | domain_uids |
+| --- | --- | --- | --- | --- |
+| 1 | decimal | Installed capacity | MW | `{S_A_1,B_A_1,W_A_1}` |
+| 2 | decimal | Total project cost | USD | `{S_A_2,B_A_2,W_A_2}` |
 
-### `universal_uid`
+## 2. `domain_variable`
 
-| Column | DDL definition |
-| --- | --- |
-| `universal_uid` | `INTEGER PRIMARY KEY` |
-| `datatype` | `TEXT NOT NULL` |
-| `context` | `TEXT NOT NULL` |
-| `unit` | nullable `TEXT` |
-| `domain_uid_list` | nullable `TEXT[]` |
+**Purpose:** Stores each domain-specific representation of a universal variable. A domain variable belongs to a specific technology and variable group, such as Solar + Assumption or Battery + Assumption.
 
-The workbook includes three shared concepts. Its brace-delimited `domain_uid_list` values are displayed exactly as supplied and map coherently to the DDL array column; the viewer does not treat this convenience list as a declared foreign key.
+| Column | Type | Purpose |
+| --- | --- | --- |
+| `domain_uid` | `VARCHAR(50)` | Primary key for the domain-specific variable, such as `S_A_1`, `B_A_1`, or `S_W_1`. These values are globally unique. |
+| `universal_uid` | `INTEGER` | Foreign key to `universal_uid.universal_uid`. Identifies the canonical business variable that this domain UID represents. |
+| `technology` | `VARCHAR(50)` | Technology to which the domain variable belongs, such as Solar, Battery, or Wind. |
+| `variable_group` | `VARCHAR(50)` | Logical grouping of the variable within the estimation process, such as Assumption, Preestimation, or Model. |
+| `name` | `VARCHAR(255)` | Domain-specific name or label for the variable. This can differ from the universal context because each technology or variable group may use different terminology. |
+| `value` | `TEXT` | Value associated with the domain variable. Stored as text in the current design to support multiple logical datatypes. |
+| `datatype` | `VARCHAR(50)` | Domain-specific datatype for the variable. This can be used to describe or validate how the stored value should be interpreted. |
 
-### `domain_variable`
+### Key constraint
 
-| Column | DDL definition |
-| --- | --- |
-| `domain_uid` | `TEXT PRIMARY KEY` |
-| `universal_uid` | `INTEGER NOT NULL`, foreign key to `universal_uid.universal_uid` |
-| `technology` | `TEXT NOT NULL` |
-| `variable_group` | `TEXT NOT NULL` |
-| `name` | `TEXT NOT NULL` |
-| `value` | nullable `TEXT` |
-| `datatype` | nullable `TEXT` |
+The following combination is unique:
 
-The DDL also declares `UNIQUE (universal_uid, technology, variable_group)`. The workbook has six representative variables. Two refer to universal IDs `7` and `12`, whose parent records are not included in the workbook sample; the viewer preserves those values but does not imply that the sample alone is insertable under the foreign key.
+```text
+universal_uid + technology + variable_group
+```
 
-### `estimation_template`
+This ensures that a universal UID maps to only one domain UID within a given technology and variable group.
 
-| Column | DDL definition |
-| --- | --- |
-| `template_id` | `INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY` |
-| `technology` | `TEXT NOT NULL` |
-| `variable_group` | `TEXT NOT NULL` |
-| `template_name` | `TEXT NOT NULL` |
-| `valid_from` | `DATE NOT NULL` |
-| `valid_to` | nullable `DATE` |
+### Example
 
-The DDL declares `UNIQUE (technology, variable_group, template_name)` and checks that `valid_to IS NULL OR valid_to >= valid_from`. No DDL relationship connects this table to `domain_variable`; matching technology and group values are dimensions, not foreign keys.
+| domain_uid | universal_uid | technology | variable_group | name | value | datatype |
+| --- | --- | --- | --- | --- | --- | --- |
+| S_A_1 | 1 | Solar | Assumption | Solar Capacity | 250 | decimal |
+| B_A_1 | 1 | Battery | Assumption | Battery Capacity | 180 | decimal |
+| W_A_1 | 1 | Wind | Assumption | Wind Capacity | 400 | decimal |
+| S_A_2 | 2 | Solar | Assumption | Project Cost | 300000000 | decimal |
 
-## Interactive ERD viewer
+## 3. `estimation_template`
 
-Open [`erd_demo.html`](erd_demo.html) directly in a modern browser; it has no server or external dependencies. It includes:
+**Purpose:** Stores the effective-dated template history for each technology and variable-group combination. A new row is created whenever the active estimation template changes.
 
-- all three DDL-backed tables, every SQL field, and the declared field-level relationship;
-- primary-key, foreign-key, not-null, identity, composite-unique, and check annotations;
-- faithful representative rows from every workbook worksheet;
-- draggable cards with live connectors and persisted layout;
-- zoom, fit, reset, auto-layout, filtering, relationship visibility, and persisted theme controls;
-- keyboard, pointer, touch, responsive, and accessible row-inspection behavior.
+| Column | Type | Purpose |
+| --- | --- | --- |
+| `template_id` | `INTEGER` | Surrogate primary key for an estimation template record. Generated automatically by PostgreSQL. |
+| `technology` | `VARCHAR(50)` | Technology to which the template applies, such as Solar, Battery, or Wind. |
+| `variable_group` | `VARCHAR(50)` | Variable group to which the template applies, such as Assumption, Preestimation, or Model. |
+| `template_name` | `VARCHAR(50)` | Business-facing name of the template, typically following the established date-plus-letter naming convention, such as `2024-09-B`. |
+| `valid_from` | `DATE` | First date on which the template is considered valid for the technology and variable group. |
+| `valid_to` | `DATE` | Last date on which the template is valid. `NULL` indicates that the template is currently active. |
 
-The workbook uses the literal text `NULL` in nullable sample cells. The viewer deliberately displays that text unchanged rather than silently converting it to a database null. Likewise, sample identity values are shown as workbook evidence, not as executable insert statements.
+### Example
 
-## Maintenance
+| template_id | technology | variable_group | template_name | valid_from | valid_to |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Solar | Assumption | 2024-01-A | 2024-01-01 | 2024-08-31 |
+| 2 | Solar | Assumption | 2024-09-B | 2024-09-01 | `NULL` |
+| 3 | Solar | Model | 2024-06-C | 2024-06-01 | `NULL` |
+| 4 | Battery | Assumption | 2025-02-B | 2025-02-01 | `NULL` |
 
-- Treat `universal_mapping_schema.xlsx` as the schema/sample inventory and keep this documentation, the viewer, and root SQL scripts aligned when repository DDL is introduced.
-- Use DDL—not sample patterns—as the authority for database constraints and relationships.
-- Review every worksheet and all populated rows and columns when checking future schema changes.
-- Before importing workbook data, define literal `NULL` conversion and ensure all referenced universal IDs exist.
+## Relationships
+
+```text
+universal_uid
+    |
+    | 1:N via universal_uid
+    v
+domain_variable
+    |
+    | logical relationship via
+    | technology + variable_group
+    v
+estimation_template
+```
+
+- `universal_uid` to `domain_variable` is a direct foreign-key relationship.
+- `domain_variable` to `estimation_template` is a logical relationship through `technology + variable_group`.
+- `estimation_template` maintains history using `valid_from` and `valid_to`.
+- `universal_uid.domain_uids` is a convenience list and should be synchronized from the authoritative mappings stored in `domain_variable`.
+
+## Source-of-Truth Rules
+
+- `universal_uid` is the source of truth for canonical variable meaning, datatype, context, and unit.
+- `domain_variable` is the source of truth for universal UID to domain UID mappings.
+- `estimation_template` is the source of truth for template history by technology and variable group.
+- `universal_uid.domain_uids` is a denormalized convenience field and should not be maintained independently from `domain_variable`.
