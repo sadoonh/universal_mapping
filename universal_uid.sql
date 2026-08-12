@@ -1,1 +1,1 @@
--- DDL definitions for universal_uid.
+-- Placeholder for future universal_uid DDL; no DDL is implemented yet.

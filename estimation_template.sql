@@ -1,1 +1,1 @@
--- DDL definitions for estimation_template.
+-- Placeholder for future estimation_template DDL; no DDL is implemented yet.
