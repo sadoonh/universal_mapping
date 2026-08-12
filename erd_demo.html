@@ -225,6 +225,8 @@
       height: clamp(450px, 61vh, 680px);
       overflow: auto;
       overscroll-behavior: contain;
+      cursor: grab;
+      touch-action: none;
       background-color: var(--canvas);
       background-image: radial-gradient(circle, var(--canvas-dot) 1px, transparent 1.3px);
       background-position: 0 0;
@@ -242,6 +244,8 @@
       height: 680px;
       transform-origin: 0 0;
     }
+
+    .diagram-viewport.panning { cursor: grabbing; }
 
     .connectors {
       position: absolute;
@@ -742,6 +746,7 @@
     let relationshipsVisible = loadValue(STORAGE.relationships, 'true') !== 'false';
     let selectedTable = null;
     let drag = null;
+    let pan = null;
     let suppressOpenUntil = 0;
     let connectorFrame = 0;
     let fitOnResize = !hasStoredValue(STORAGE.zoom);
@@ -1048,6 +1053,17 @@
       scheduleConnectors();
     }
 
+    function zoomAtPoint(nextZoom, clientX, clientY) {
+      const rect = elements.viewport.getBoundingClientRect();
+      const pointX = clientX - rect.left;
+      const pointY = clientY - rect.top;
+      const logicalX = (elements.viewport.scrollLeft + pointX) / zoom;
+      const logicalY = (elements.viewport.scrollTop + pointY) / zoom;
+      setZoom(nextZoom, { center: false });
+      elements.viewport.scrollLeft = logicalX * zoom - pointX;
+      elements.viewport.scrollTop = logicalY * zoom - pointY;
+    }
+
     function setZoom(nextZoom, { persist = true, center = true } = {}) {
       const oldZoom = zoom;
       const logicalCenter = {
@@ -1165,8 +1181,45 @@
       announce(`${next} theme enabled`);
     }
 
+    function startPan(event) {
+      if (event.button !== 0 || !event.isPrimary || event.target.closest('.table-card')) return;
+      event.preventDefault();
+      elements.viewport.focus({ preventScroll: true });
+      elements.viewport.setPointerCapture(event.pointerId);
+      elements.viewport.classList.add('panning');
+      pan = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        scrollLeft: elements.viewport.scrollLeft,
+        scrollTop: elements.viewport.scrollTop
+      };
+    }
+
+    function movePan(event) {
+      if (!pan || event.pointerId !== pan.pointerId) return;
+      elements.viewport.scrollLeft = pan.scrollLeft - (event.clientX - pan.startX);
+      elements.viewport.scrollTop = pan.scrollTop - (event.clientY - pan.startY);
+    }
+
+    function endPan(event) {
+      if (!pan || event.pointerId !== pan.pointerId) return;
+      if (elements.viewport.hasPointerCapture(event.pointerId)) elements.viewport.releasePointerCapture(event.pointerId);
+      elements.viewport.classList.remove('panning');
+      pan = null;
+    }
+
     function reducedMotion() { return matchMedia('(prefers-reduced-motion: reduce)').matches; }
     function announce(message) { elements.announcer.textContent = message; }
+
+    elements.viewport.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      zoomAtPoint(zoom + (event.deltaY < 0 ? 0.1 : -0.1), event.clientX, event.clientY);
+    }, { passive: false });
+    elements.viewport.addEventListener('pointerdown', startPan);
+    elements.viewport.addEventListener('pointermove', movePan);
+    elements.viewport.addEventListener('pointerup', endPan);
+    elements.viewport.addEventListener('pointercancel', endPan);
 
     document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom - 0.1));
     document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom + 0.1));
