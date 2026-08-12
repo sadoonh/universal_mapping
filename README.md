@@ -1,6 +1,8 @@
 # UID Schema Reference
 
-This document describes the final three-table schema for universal variables, domain-specific variables, and estimation template history.
+### Launch the app
+
+Open [`erd_demo.html`](erd_demo.html) directly in a modern web browser. No installation or server is required.
 
 ## 1. `universal_uid`
 
@@ -9,14 +11,14 @@ This document describes the final three-table schema for universal variables, do
 | Column | Type | Purpose |
 | --- | --- | --- |
 | `universal_uid` | `INTEGER` | Primary key for the canonical variable. This is the stable, organization-wide identifier used to connect equivalent variables across different technologies and variable groups. |
-| `datatype` | `VARCHAR(50)` | Defines the canonical datatype expected for the universal variable, such as decimal, text, or date. |
+| `datatype` | `TEXT` | Defines the canonical datatype expected for the universal variable, such as decimal, text, or date. |
 | `context` | `TEXT` | Business description of what the universal UID represents. Provides the shared semantic meaning of the variable. |
-| `unit` | `VARCHAR(50)` | Unit of measure for the variable when applicable, such as MW, USD, or %. Can be `NULL` for variables without a unit. |
-| `domain_uids` | `TEXT[]` | Convenience list of all domain-specific UIDs associated with the universal UID, such as `{S_A_1,B_A_1,W_A_1}`. This is a denormalized management/reporting field; `domain_variable` should remain the authoritative source for the mapping. |
+| `unit` | `TEXT` | Unit of measure for the variable when applicable, such as MW, USD, or %. Can be `NULL` for variables without a unit. |
+| `domain_uid_list` | `TEXT[]` | Convenience list of all domain-specific UIDs associated with the universal UID, such as `{S_A_1,B_A_1,W_A_1}`. This is a denormalized management/reporting field; `domain_variable` should remain the authoritative source for the mapping. |
 
 ### Example
 
-| universal_uid | datatype | context | unit | domain_uids |
+| universal_uid | datatype | context | unit | domain_uid_list |
 | --- | --- | --- | --- | --- |
 | 1 | decimal | Installed capacity | MW | `{S_A_1,B_A_1,W_A_1}` |
 | 2 | decimal | Total project cost | USD | `{S_A_2,B_A_2,W_A_2}` |
@@ -27,13 +29,13 @@ This document describes the final three-table schema for universal variables, do
 
 | Column | Type | Purpose |
 | --- | --- | --- |
-| `domain_uid` | `VARCHAR(50)` | Primary key for the domain-specific variable, such as `S_A_1`, `B_A_1`, or `S_W_1`. These values are globally unique. |
+| `domain_uid` | `TEXT` | Primary key for the domain-specific variable, such as `S_A_1`, `B_A_1`, or `S_W_1`. These values are globally unique. |
 | `universal_uid` | `INTEGER` | Foreign key to `universal_uid.universal_uid`. Identifies the canonical business variable that this domain UID represents. |
-| `technology` | `VARCHAR(50)` | Technology to which the domain variable belongs, such as Solar, Battery, or Wind. |
-| `variable_group` | `VARCHAR(50)` | Logical grouping of the variable within the estimation process, such as Assumption, Preestimation, or Model. |
-| `name` | `VARCHAR(255)` | Domain-specific name or label for the variable. This can differ from the universal context because each technology or variable group may use different terminology. |
+| `technology` | `TEXT` | Technology to which the domain variable belongs, such as Solar, Battery, or Wind. |
+| `variable_group` | `TEXT` | Logical grouping of the variable within the estimation process, such as Assumption, Preestimation, or Model. |
+| `name` | `TEXT` | Domain-specific name or label for the variable. This can differ from the universal context because each technology or variable group may use different terminology. |
 | `value` | `TEXT` | Value associated with the domain variable. Stored as text in the current design to support multiple logical datatypes. |
-| `datatype` | `VARCHAR(50)` | Domain-specific datatype for the variable. This can be used to describe or validate how the stored value should be interpreted. |
+| `datatype` | `TEXT` | Domain-specific datatype for the variable. This can be used to describe or validate how the stored value should be interpreted. |
 
 ### Key constraint
 
@@ -60,10 +62,10 @@ This ensures that a universal UID maps to only one domain UID within a given tec
 
 | Column | Type | Purpose |
 | --- | --- | --- |
-| `template_id` | `INTEGER` | Surrogate primary key for an estimation template record. Generated automatically by PostgreSQL. |
-| `technology` | `VARCHAR(50)` | Technology to which the template applies, such as Solar, Battery, or Wind. |
-| `variable_group` | `VARCHAR(50)` | Variable group to which the template applies, such as Assumption, Preestimation, or Model. |
-| `template_name` | `VARCHAR(50)` | Business-facing name of the template, typically following the established date-plus-letter naming convention, such as `2024-09-B`. |
+| `template_id` | `INTEGER GENERATED ALWAYS AS IDENTITY` | Surrogate primary key for an estimation template record. Generated automatically by PostgreSQL. |
+| `technology` | `TEXT` | Technology to which the template applies, such as Solar, Battery, or Wind. |
+| `variable_group` | `TEXT` | Variable group to which the template applies, such as Assumption, Preestimation, or Model. |
+| `template_name` | `TEXT` | Business-facing name of the template, typically following the established date-plus-letter naming convention, such as `2024-09-B`. |
 | `valid_from` | `DATE` | First date on which the template is considered valid for the technology and variable group. |
 | `valid_to` | `DATE` | Last date on which the template is valid. `NULL` indicates that the template is currently active. |
 
@@ -94,11 +96,11 @@ estimation_template
 - `universal_uid` to `domain_variable` is a direct foreign-key relationship.
 - `domain_variable` to `estimation_template` is a logical relationship through `technology + variable_group`.
 - `estimation_template` maintains history using `valid_from` and `valid_to`.
-- `universal_uid.domain_uids` is a convenience list and should be synchronized from the authoritative mappings stored in `domain_variable`.
+- `universal_uid.domain_uid_list` is a convenience list and should be synchronized from the authoritative mappings stored in `domain_variable`.
 
 ## Source-of-Truth Rules
 
 - `universal_uid` is the source of truth for canonical variable meaning, datatype, context, and unit.
 - `domain_variable` is the source of truth for universal UID to domain UID mappings.
 - `estimation_template` is the source of truth for template history by technology and variable group.
-- `universal_uid.domain_uids` is a denormalized convenience field and should not be maintained independently from `domain_variable`.
+- `universal_uid.domain_uid_list` is a denormalized convenience field and should not be maintained independently from `domain_variable`.
