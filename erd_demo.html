@@ -457,7 +457,6 @@
     }
 
     .data-panel-title { margin: 0; font-size: 0.9rem; letter-spacing: 0.01em; }
-    .data-panel-summary { margin: 1px 0 0; color: var(--muted); font-size: 0.7rem; }
 
     .close-button {
       position: absolute;
@@ -477,7 +476,7 @@
 
     .data-table { width: max-content; margin: 0 auto; border-collapse: collapse; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
     .data-table th, .data-table td {
-      padding: 8px 5px;
+      padding: 8px 10px;
       border-right: 2px solid var(--border-strong);
       border-bottom: 2px solid var(--border-strong);
       text-align: center;
@@ -534,7 +533,7 @@
       .tool-group { flex: 1; justify-content: center; }
       .diagram-viewport { height: 54vh; min-height: 390px; }
       .viewer-footer { align-items: flex-start; }
-      .data-table th, .data-table td { padding: 9px 5px; }
+      .data-table th, .data-table td { padding: 9px 10px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -619,7 +618,6 @@
       <header class="data-panel-header">
         <div>
           <h2 class="data-panel-title" id="dataPanelTitle"></h2>
-          <p class="data-panel-summary" id="dataPanelSummary"></p>
         </div>
         <button class="close-button" id="closeData" type="button" aria-label="Close sample data" title="Close sample data (Escape)">×</button>
       </header>
@@ -729,7 +727,6 @@
       zoomReadout: document.getElementById('zoomReadout'),
       dataPanel: document.getElementById('dataPanel'),
       dataPanelTitle: document.getElementById('dataPanelTitle'),
-      dataPanelSummary: document.getElementById('dataPanelSummary'),
       dataTable: document.getElementById('dataTable'),
       closeData: document.getElementById('closeData'),
       relationshipsToggle: document.getElementById('relationshipsToggle'),
@@ -943,7 +940,6 @@
       selectedTable = name;
       cards.forEach((card, cardName) => card.classList.toggle('active', cardName === name));
       elements.dataPanelTitle.textContent = table.name;
-      elements.dataPanelSummary.textContent = `${table.rows.length} row${table.rows.length === 1 ? '' : 's'}`;
       elements.dataTable.replaceChildren();
 
       const thead = document.createElement('thead');
