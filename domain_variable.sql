@@ -1,1 +1,1 @@
--- DDL definitions for domain_variable.
+-- Placeholder for future domain_variable DDL; no DDL is implemented yet.
