@@ -479,9 +479,9 @@
     .close-button:hover { border-color: var(--border-strong); color: var(--text); }
     .data-scroll { max-height: 300px; overflow: auto; }
 
-    .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .data-table { width: max-content; margin: 0 auto; border-collapse: collapse; font-size: 0.8rem; }
     .data-table th, .data-table td {
-      padding: 10px 16px;
+      padding: 10px 5px;
       border-bottom: 1px solid var(--border);
       text-align: left;
       white-space: nowrap;
@@ -531,7 +531,7 @@
       .tool-group { flex: 1; justify-content: center; }
       .diagram-viewport { height: 54vh; min-height: 390px; }
       .viewer-footer { align-items: flex-start; }
-      .data-table th, .data-table td { padding: 9px 12px; }
+      .data-table th, .data-table td { padding: 9px 5px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
