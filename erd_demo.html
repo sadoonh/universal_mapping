@@ -444,7 +444,9 @@
     }
 
     .data-panel {
-      margin-top: 16px;
+      width: max-content;
+      max-width: 100%;
+      margin: 16px auto 0;
       overflow: hidden;
       border: 1px solid var(--border);
       border-radius: 14px;
@@ -477,7 +479,7 @@
     }
 
     .close-button:hover { border-color: var(--border-strong); color: var(--text); }
-    .data-scroll { max-height: 300px; overflow: auto; }
+    .data-scroll { width: max-content; max-width: 100%; max-height: 300px; overflow: auto; }
 
     .data-table { width: max-content; margin: 0 auto; border-collapse: collapse; font-size: 0.8rem; }
     .data-table th, .data-table td {
