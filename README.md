@@ -1,78 +1,79 @@
 # Universal Mapping
 
-Universal Mapping is a small schema-design repository for describing how technology-specific variables relate to shared concepts and how estimation templates are cataloged. The model is documented by an Excel workbook; the workbook currently includes illustrative records, not a complete production dataset or a database implementation.
+Universal Mapping describes how technology-specific variables map to shared concepts and how estimation templates are cataloged. The Excel workbook contains the proposed tables and representative records. The standalone ERD viewer renders those workbook tables using the corresponding SQL DDL as the authority for names, columns, data types, keys, nullability, uniqueness, checks, identity generation, and relationships.
 
 ## Repository layout
 
 | File | Role |
 | --- | --- |
-| `universal_mapping_schema.xlsx` | Canonical workbook representation of the proposed schema and sample data. |
-| `README.md` | Human-readable inventory of the workbook structure and evidence-supported relationships. |
-| `erd_demo.html` | Standalone interactive ERD viewer using a separate fictional store schema for demonstration. |
+| `universal_mapping_schema.xlsx` | Canonical workbook representation and representative sample rows. |
+| `erd_demo.html` | Standalone interactive viewer of the workbook tables, modeled with the supplied SQL DDL definitions. |
+| `universal_uid.sql` | Repository placeholder reserved for `universal_uid` DDL. |
+| `domain_variable.sql` | Repository placeholder reserved for `domain_variable` DDL. |
+| `estimation_template.sql` | Repository placeholder reserved for `estimation_template` DDL. |
 | `AGENTS.md` | Concise contributor guidance. |
-| `universal_uid.sql` | SQL placeholder containing only a comment for future `universal_uid` DDL. |
-| `domain_variable.sql` | SQL placeholder containing only a comment for future `domain_variable` DDL. |
-| `estimation_template.sql` | SQL placeholder containing only a comment for future `estimation_template` DDL. |
 
-## Workbook convention
+The repository SQL files remain placeholders. For this prototype, the viewer was reconciled against the separately supplied corresponding DDL inputs; those inputs define the structure summarized below.
 
-Each worksheet represents one table. Its first row contains column names, and subsequent rows are **sample data**. Values and patterns below describe only what is observed; they are not constraints unless stated otherwise. In particular, the text `NULL` appears as a literal workbook value and should not be assumed to be a database null until a future DDL defines that conversion.
+## Schema
 
-## Tables
+Each worksheet represents one table. Its first row contains column names and subsequent rows are illustrative data, not a complete production dataset.
 
 ### `universal_uid`
 
-A catalog that appears to assign a shared identifier to a context, datatype, unit, and set of domain-specific identifiers.
-
-| Column | Observed characteristics |
+| Column | DDL definition |
 | --- | --- |
-| `universal_uid` | Integer-like values; unique in the three sample rows. Appears to identify the shared concept. |
-| `datatype` | Uppercase datatype labels (`NUMERIC`, `DATE`). Likely describes values associated with the concept. |
-| `context` | Human-readable concept text, such as “Installed capacity.” |
-| `unit` | Unit text (`MW`, `USD`) or the literal text `NULL` in the sample. |
-| `domain_uid_list` | Text formatted as a brace-delimited list of `domain_uid` values. The workbook does not establish whether an eventual database should store this as an array, text, or a normalized relationship. |
+| `universal_uid` | `INTEGER PRIMARY KEY` |
+| `datatype` | `TEXT NOT NULL` |
+| `context` | `TEXT NOT NULL` |
+| `unit` | nullable `TEXT` |
+| `domain_uid_list` | nullable `TEXT[]` |
 
-The lists for universal IDs 1 and 2 include the corresponding sampled `domain_variable.domain_uid` values. Some listed IDs have no sample row, so the workbook is intentionally or potentially incomplete. This list behaves like a reverse mapping in the sample, but no uniqueness or referential-integrity constraint is established.
+The workbook includes three shared concepts. Its brace-delimited `domain_uid_list` values are displayed exactly as supplied and map coherently to the DDL array column; the viewer does not treat this convenience list as a declared foreign key.
 
 ### `domain_variable`
 
-Sample technology-specific variables and their apparent mapping to shared concepts.
-
-| Column | Observed characteristics |
+| Column | DDL definition |
 | --- | --- |
-| `domain_uid` | Text identifier; unique in the six sample rows. Values use underscore-delimited codes, but the code structure is not defined by the workbook. |
-| `universal_uid` | Integer-like value that appears to reference `universal_uid.universal_uid`. |
-| `technology` | Category text; sampled values are `Solar`, `Battery`, and `Wind`. |
-| `variable_group` | Category text; sampled values are `Assumption`, `Preestimation`, and `Model`. |
-| `name` | Human-readable variable name. |
-| `value` | Numeric in every sample row; other value types may be possible because a separate datatype column exists. |
-| `datatype` | Uppercase datatype label; `NUMERIC` in every sample row. |
+| `domain_uid` | `TEXT PRIMARY KEY` |
+| `universal_uid` | `INTEGER NOT NULL`, foreign key to `universal_uid.universal_uid` |
+| `technology` | `TEXT NOT NULL` |
+| `variable_group` | `TEXT NOT NULL` |
+| `name` | `TEXT NOT NULL` |
+| `value` | nullable `TEXT` |
+| `datatype` | nullable `TEXT` |
 
-Rows referencing universal IDs 1 and 2 have matching sampled catalog rows and datatype labels. References to 7 and 12 do not have matching `universal_uid` sample rows, so referential completeness cannot be inferred. The workbook shows no direct link from this table to `estimation_template`; `technology` and `variable_group` are merely shared dimensions visible in both.
+The DDL also declares `UNIQUE (universal_uid, technology, variable_group)`. The workbook has six representative variables. Two refer to universal IDs `7` and `12`, whose parent records are not included in the workbook sample; the viewer preserves those values but does not imply that the sample alone is insertable under the foreign key.
 
 ### `estimation_template`
 
-A catalog of named templates by technology and variable group, with apparent effective-date ranges.
-
-| Column | Observed characteristics |
+| Column | DDL definition |
 | --- | --- |
-| `template_id` | Integer-like values; unique in the six sample rows. Appears to identify a template record. |
-| `technology` | Category text; sampled values are `Solar` and `Battery`. |
-| `variable_group` | Category text; sampled values are `Assumption`, `Preestimation`, and `Model`. |
-| `template_name` | Text names following a date-like pattern in the samples; the workbook does not define that pattern as a requirement. |
-| `valid_from` | ISO-formatted date text (`YYYY-MM-DD`) in all sample rows. |
-| `valid_to` | ISO-formatted date text or the literal text `NULL`, apparently indicating an open-ended range; that interpretation is inferred, not defined. |
+| `template_id` | `INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY` |
+| `technology` | `TEXT NOT NULL` |
+| `variable_group` | `TEXT NOT NULL` |
+| `template_name` | `TEXT NOT NULL` |
+| `valid_from` | `DATE NOT NULL` |
+| `valid_to` | nullable `DATE` |
 
-For the sampled `Assumption` rows within a technology, adjacent date ranges do not overlap. The small sample does not establish a general non-overlap, ordering, or uniqueness rule.
+The DDL declares `UNIQUE (technology, variable_group, template_name)` and checks that `valid_to IS NULL OR valid_to >= valid_from`. No DDL relationship connects this table to `domain_variable`; matching technology and group values are dimensions, not foreign keys.
 
-## Interactive ERD demo
+## Interactive ERD viewer
 
-Open [`erd_demo.html`](erd_demo.html) directly in a modern browser; it has no server or external dependencies. The demo provides draggable tables, live relationship connectors, zoom and fit controls, search, theme and relationship toggles, persisted layout preferences, and keyboard-accessible sample-row viewing. Its small fictional store schema is UI demonstration data and does **not** represent the workbook schema documented below.
+Open [`erd_demo.html`](erd_demo.html) directly in a modern browser; it has no server or external dependencies. It includes:
 
-## Maintenance and use
+- all three DDL-backed tables, every SQL field, and the declared field-level relationship;
+- primary-key, foreign-key, not-null, identity, composite-unique, and check annotations;
+- faithful representative rows from every workbook worksheet;
+- draggable cards with live connectors and persisted layout;
+- zoom, fit, reset, auto-layout, filtering, relationship visibility, and persisted theme controls;
+- keyboard, pointer, touch, responsive, and accessible row-inspection behavior.
 
-- Treat workbook rows as examples when designing imports, DDL, validation, or tests; do not promote sample categories, identifier patterns, or values to constraints without an explicit decision.
-- When adding or renaming a worksheet or column, update this README in the same change.
-- Keep the workbook and its three root SQL files aligned as DDL is introduced. Record database types, primary keys, foreign keys, null handling, list normalization, and date conversion explicitly in both the relevant SQL and this documentation.
-- Before using the workbook for ingestion, decide how literal `NULL` values and `domain_uid_list` are converted and validate unresolved cross-table identifiers.
-- Review all worksheets—not only visible sample rows—when checking future schema changes.
+The workbook uses the literal text `NULL` in nullable sample cells. The viewer deliberately displays that text unchanged rather than silently converting it to a database null. Likewise, sample identity values are shown as workbook evidence, not as executable insert statements.
+
+## Maintenance
+
+- Treat `universal_mapping_schema.xlsx` as the schema/sample inventory and keep this documentation, the viewer, and root SQL scripts aligned when repository DDL is introduced.
+- Use DDL—not sample patterns—as the authority for database constraints and relationships.
+- Review every worksheet and all populated rows and columns when checking future schema changes.
+- Before importing workbook data, define literal `NULL` conversion and ensure all referenced universal IDs exist.
