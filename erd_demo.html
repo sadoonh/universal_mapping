@@ -1,0 +1,1241 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Store Database · Interactive ERD Demo</title>
+  <script>
+    try {
+      const savedTheme = localStorage.getItem('erd-demo.theme');
+      if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.dataset.theme = savedTheme;
+    } catch (_) {}
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090d17;
+      --surface: #101726;
+      --surface-raised: #151e30;
+      --surface-hover: #1a263b;
+      --canvas: #0c1220;
+      --canvas-dot: rgba(148, 163, 184, 0.09);
+      --border: #27344a;
+      --border-strong: #3a4a65;
+      --text: #eef4ff;
+      --muted: #96a5bc;
+      --subtle: #6f809a;
+      --accent: #72a8ff;
+      --accent-strong: #3b82f6;
+      --accent-soft: rgba(59, 130, 246, 0.16);
+      --pk: #63dbb6;
+      --pk-soft: rgba(45, 212, 160, 0.14);
+      --fk: #f4bd6a;
+      --fk-soft: rgba(244, 189, 106, 0.14);
+      --relationship: #c694ff;
+      --danger: #ff8b9b;
+      --shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
+      --focus: 0 0 0 3px rgba(114, 168, 255, 0.34);
+    }
+
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #edf2f8;
+      --surface: #ffffff;
+      --surface-raised: #f8fafc;
+      --surface-hover: #eef3f9;
+      --canvas: #f4f7fb;
+      --canvas-dot: rgba(51, 65, 85, 0.1);
+      --border: #cfdae8;
+      --border-strong: #adbed2;
+      --text: #152033;
+      --muted: #53647b;
+      --subtle: #718198;
+      --accent: #2369c9;
+      --accent-strong: #2369c9;
+      --accent-soft: rgba(35, 105, 201, 0.11);
+      --pk: #087e62;
+      --pk-soft: rgba(8, 126, 98, 0.1);
+      --fk: #9a5d08;
+      --fk-soft: rgba(154, 93, 8, 0.1);
+      --relationship: #7542ac;
+      --danger: #ba304c;
+      --shadow: 0 18px 42px rgba(42, 58, 82, 0.14);
+      --focus: 0 0 0 3px rgba(35, 105, 201, 0.24);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 12% -10%, rgba(59, 130, 246, 0.13), transparent 32rem),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      transition: background-color 160ms ease, color 160ms ease;
+    }
+
+    button, input { font: inherit; }
+    button { color: inherit; }
+
+    button:focus-visible, input:focus-visible, .table-card:focus-visible {
+      outline: none;
+      box-shadow: var(--focus);
+    }
+
+    .app-shell {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      padding: 28px clamp(14px, 3vw, 40px) 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 5px;
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--pk);
+      box-shadow: 0 0 0 4px var(--pk-soft);
+      content: "";
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.65rem, 4vw, 2.35rem);
+      line-height: 1.12;
+      letter-spacing: -0.035em;
+    }
+
+    .subtitle {
+      max-width: 620px;
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .demo-chip {
+      flex: none;
+      padding: 7px 11px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .viewer {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar {
+      position: relative;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1 1 260px;
+      min-width: 170px;
+      max-width: 380px;
+    }
+
+    .search-icon {
+      position: absolute;
+      top: 50%;
+      left: 11px;
+      width: 16px;
+      height: 16px;
+      color: var(--subtle);
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 36px;
+      padding: 0 34px 0 35px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      outline: none;
+      background: var(--canvas);
+      color: var(--text);
+      transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+    }
+
+    .search-input::placeholder { color: var(--subtle); }
+    .search-input:hover { border-color: var(--border-strong); }
+    .search-input:focus { border-color: var(--accent); }
+
+    .clear-search {
+      position: absolute;
+      top: 50%;
+      right: 6px;
+      display: none;
+      width: 25px;
+      height: 25px;
+      padding: 0;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transform: translateY(-50%);
+    }
+
+    .clear-search.visible { display: grid; place-items: center; }
+    .clear-search:hover { background: var(--surface-hover); color: var(--text); }
+
+    .tool-group {
+      display: flex;
+      align-items: center;
+      flex: none;
+      gap: 4px;
+      padding: 3px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--canvas);
+    }
+
+    .tool-button {
+      display: inline-flex;
+      min-width: 32px;
+      height: 30px;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 0 9px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background 130ms ease, color 130ms ease, transform 130ms ease;
+    }
+
+    .tool-button:hover { background: var(--surface-hover); color: var(--text); }
+    .tool-button:active { transform: translateY(1px); }
+    .tool-button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+    .tool-button.danger:hover { background: rgba(255, 79, 110, 0.11); color: var(--danger); }
+
+    .tool-button svg { width: 15px; height: 15px; flex: none; }
+
+    .zoom-readout {
+      min-width: 44px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+    }
+
+    .diagram-viewport {
+      position: relative;
+      height: clamp(450px, 61vh, 680px);
+      overflow: auto;
+      overscroll-behavior: contain;
+      background-color: var(--canvas);
+      background-image: radial-gradient(circle, var(--canvas-dot) 1px, transparent 1.3px);
+      background-position: 0 0;
+      background-size: 22px 22px;
+      scrollbar-color: var(--border-strong) transparent;
+    }
+
+    .diagram-stage { position: relative; min-width: 100%; min-height: 100%; }
+
+    .diagram-scene {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1220px;
+      height: 600px;
+      transform-origin: 0 0;
+    }
+
+    .connectors {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .relationship-path {
+      fill: none;
+      stroke: var(--relationship);
+      stroke-width: 2;
+      stroke-dasharray: 6 5;
+      vector-effect: non-scaling-stroke;
+      opacity: 0.82;
+    }
+
+    .relationship-node {
+      fill: var(--canvas);
+      stroke: var(--relationship);
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .relationship-label-bg { fill: var(--canvas); stroke: var(--border); stroke-width: 1; }
+    .relationship-label { fill: var(--relationship); font-size: 11px; font-weight: 800; }
+
+    .table-card {
+      position: absolute;
+      z-index: 3;
+      width: 286px;
+      overflow: hidden;
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+      outline: none;
+      background: var(--surface-raised);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+    }
+
+    .table-card:hover {
+      border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.26);
+    }
+
+    .table-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-soft), 0 18px 38px rgba(0, 0, 0, 0.3);
+    }
+
+    .table-card.dragging {
+      z-index: 10;
+      border-color: var(--accent);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.42);
+      cursor: grabbing;
+      transition: none;
+    }
+
+    .table-card[hidden] { display: none; }
+
+    .table-header {
+      display: flex;
+      min-height: 52px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 13px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, var(--accent-soft), transparent 78%);
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .table-card.dragging .table-header { cursor: grabbing; }
+
+    .table-title-wrap { min-width: 0; }
+
+    .table-title {
+      display: block;
+      overflow: hidden;
+      color: var(--text);
+      font-size: 0.94rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .table-meta { display: block; margin-top: 1px; color: var(--muted); font-size: 0.67rem; }
+
+    .drag-grip {
+      display: grid;
+      flex: none;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 7px;
+      color: var(--subtle);
+    }
+
+    .table-header:hover .drag-grip { background: var(--surface-hover); color: var(--text); }
+    .drag-grip svg { width: 15px; height: 15px; }
+
+    .field-list { margin: 0; padding: 5px 0; list-style: none; }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      min-height: 37px;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 13px;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+    }
+
+    .field-row:last-child { border-bottom: 0; }
+    .field-row:hover { background: color-mix(in srgb, var(--surface-hover) 62%, transparent); }
+    .field-name { overflow: hidden; color: var(--text); text-overflow: ellipsis; white-space: nowrap; }
+    .field-row.is-pk .field-name { color: var(--pk); font-weight: 800; }
+    .field-row.is-fk .field-name { color: var(--fk); font-weight: 800; }
+    .field-type { color: var(--subtle); font-size: 0.67rem; }
+
+    .badge {
+      padding: 2px 5px;
+      border-radius: 5px;
+      font-family: Inter, ui-sans-serif, sans-serif;
+      font-size: 0.56rem;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+    }
+
+    .badge.pk { background: var(--pk-soft); color: var(--pk); }
+    .badge.fk { background: var(--fk-soft); color: var(--fk); }
+
+    .no-results {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: 5;
+      display: none;
+      width: min(330px, calc(100% - 36px));
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      color: var(--muted);
+      text-align: center;
+      transform: translate(-50%, -50%);
+    }
+
+    .no-results.visible { display: block; }
+    .no-results strong { display: block; margin-bottom: 3px; color: var(--text); }
+
+    .viewer-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 42px;
+      padding: 8px 13px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--subtle);
+      font-size: 0.72rem;
+    }
+
+    .legend, .hints { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 5px; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+    .legend-dot.pk { background: var(--pk); }
+    .legend-dot.fk { background: var(--fk); }
+    kbd {
+      min-width: 19px;
+      padding: 1px 5px;
+      border: 1px solid var(--border-strong);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      background: var(--canvas);
+      color: var(--muted);
+      font: 0.67rem ui-monospace, monospace;
+      text-align: center;
+    }
+
+    .data-panel {
+      margin-top: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .data-panel[hidden] { display: none; }
+
+    .data-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .data-panel-title { margin: 0; font-size: 0.95rem; }
+    .data-panel-summary { margin: 2px 0 0; color: var(--muted); font-size: 0.75rem; }
+
+    .close-button {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--canvas);
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .close-button:hover { border-color: var(--border-strong); color: var(--text); }
+    .data-scroll { max-height: 300px; overflow: auto; }
+
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .data-table th, .data-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .data-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--surface-raised);
+      color: var(--accent);
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .data-table td { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .data-table tbody tr:hover td { background: var(--surface-hover); color: var(--text); }
+    .data-table tbody tr:last-child td { border-bottom: 0; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 920px) {
+      .toolbar { flex-wrap: wrap; }
+      .search-wrap { max-width: none; }
+      .toolbar > .tool-group:last-child { margin-left: auto; }
+      .tool-button .optional-label { display: none; }
+      .hints .secondary-hint { display: none; }
+    }
+
+    @media (max-width: 620px) {
+      .app-shell { padding-top: 20px; }
+      .topbar { align-items: flex-start; }
+      .demo-chip { display: none; }
+      .toolbar { gap: 7px; padding: 9px; }
+      .search-wrap { flex-basis: 100%; order: -1; }
+      .tool-group { flex: 1; justify-content: center; }
+      .diagram-viewport { height: 54vh; min-height: 390px; }
+      .viewer-footer { align-items: flex-start; }
+      .hints { display: none; }
+      .data-table th, .data-table td { padding: 9px 12px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Interactive schema explorer</p>
+        <h1>Store Database</h1>
+        <p class="subtitle">Explore a small sample schema, inspect its data, and arrange the tables to follow the relationships.</p>
+      </div>
+      <span class="demo-chip">Standalone demo</span>
+    </header>
+
+    <section class="viewer" aria-label="Entity relationship diagram viewer">
+      <div class="toolbar" role="toolbar" aria-label="Diagram controls">
+        <label class="search-wrap">
+          <span class="sr-only">Filter tables or fields</span>
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+          <input class="search-input" id="searchInput" type="search" placeholder="Filter tables or fields…" autocomplete="off">
+          <button class="clear-search" id="clearSearch" type="button" aria-label="Clear table filter" title="Clear filter">×</button>
+        </label>
+
+        <div class="tool-group" aria-label="Zoom controls">
+          <button class="tool-button" id="zoomOut" type="button" aria-label="Zoom out" title="Zoom out (−)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M8 11h6m6 9-4-4"></path></svg>
+          </button>
+          <span class="zoom-readout" id="zoomReadout" aria-live="polite">100%</span>
+          <button class="tool-button" id="zoomIn" type="button" aria-label="Zoom in" title="Zoom in (+)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M11 8v6M8 11h6m6 9-4-4"></path></svg>
+          </button>
+          <button class="tool-button" id="fitView" type="button" aria-label="Fit diagram to view" title="Fit diagram to view (0)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M8 21H3v-5m13 5h5v-5"></path></svg>
+            <span class="optional-label">Fit</span>
+          </button>
+        </div>
+
+        <div class="tool-group" aria-label="Layout controls">
+          <button class="tool-button" id="autoLayout" type="button" title="Restore the default table arrangement">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="7" height="6" rx="1"></rect><rect x="14" y="14" width="7" height="6" rx="1"></rect><path d="M10 7h4a3 3 0 0 1 3 3v4"></path></svg>
+            <span class="optional-label">Auto layout</span>
+          </button>
+          <button class="tool-button danger" id="resetAll" type="button" title="Reset saved layout and viewer preferences">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4v6h6M5.5 15a8 8 0 1 0 .5-7l-2 2"></path></svg>
+            <span class="optional-label">Reset</span>
+          </button>
+        </div>
+
+        <div class="tool-group" aria-label="Display controls">
+          <button class="tool-button" id="relationshipsToggle" type="button" aria-pressed="true" title="Show or hide relationships (R)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="5" cy="12" r="2"></circle><circle cx="19" cy="7" r="2"></circle><circle cx="19" cy="17" r="2"></circle><path d="M7 12h3a4 4 0 0 0 4-4 1 1 0 0 1 1-1h2M10 12a4 4 0 0 1 4 4 1 1 0 0 0 1 1h2"></path></svg>
+            <span class="optional-label">Relations</span>
+          </button>
+          <button class="tool-button" id="themeToggle" type="button" title="Switch color theme">
+            <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"></svg>
+            <span class="optional-label" id="themeLabel">Light</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="diagram-viewport" id="viewport" tabindex="0" aria-label="Scrollable diagram canvas">
+        <div class="diagram-stage" id="stage">
+          <div class="diagram-scene" id="scene">
+            <svg class="connectors" id="connectors" aria-hidden="true"></svg>
+          </div>
+        </div>
+        <div class="no-results" id="noResults" role="status">
+          <strong>No matching tables</strong>
+          Try a table name, field name, or clear the filter.
+        </div>
+      </div>
+
+      <footer class="viewer-footer">
+        <div class="legend" aria-label="Diagram legend">
+          <span class="legend-item"><span class="legend-dot pk"></span>Primary key</span>
+          <span class="legend-item"><span class="legend-dot fk"></span>Foreign key</span>
+        </div>
+        <div class="hints">
+          <span>Drag table headers</span>
+          <span class="secondary-hint"><kbd>Enter</kbd> view rows</span>
+          <span class="secondary-hint"><kbd>/</kbd> filter</span>
+        </div>
+      </footer>
+    </section>
+
+    <section class="data-panel" id="dataPanel" aria-labelledby="dataPanelTitle" hidden>
+      <header class="data-panel-header">
+        <div>
+          <h2 class="data-panel-title" id="dataPanelTitle"></h2>
+          <p class="data-panel-summary" id="dataPanelSummary"></p>
+        </div>
+        <button class="close-button" id="closeData" type="button" aria-label="Close sample data" title="Close sample data (Escape)">×</button>
+      </header>
+      <div class="data-scroll" tabindex="0">
+        <table class="data-table" id="dataTable"></table>
+      </div>
+    </section>
+    <div class="sr-only" id="announcer" aria-live="polite"></div>
+  </main>
+
+  <script>
+    'use strict';
+
+    // This intentionally retains the supplied demo schema. It is not the universal_mapping workbook schema.
+    const schema = [
+      {
+        name: 'Customers',
+        fields: [
+          { name: 'id', type: 'int', key: 'pk' },
+          { name: 'name', type: 'text' },
+          { name: 'email', type: 'text' }
+        ],
+        rows: [
+          { id: 1, name: 'Ava Chen', email: 'ava@example.com' },
+          { id: 2, name: 'Marco Diaz', email: 'marco@example.com' }
+        ]
+      },
+      {
+        name: 'Orders',
+        fields: [
+          { name: 'id', type: 'int', key: 'pk' },
+          { name: 'customer_id', type: 'int', key: 'fk' },
+          { name: 'date', type: 'date' }
+        ],
+        rows: [
+          { id: 101, customer_id: 1, date: '2026-07-02' },
+          { id: 102, customer_id: 2, date: '2026-07-05' }
+        ]
+      },
+      {
+        name: 'Order_Items',
+        fields: [
+          { name: 'id', type: 'int', key: 'pk' },
+          { name: 'order_id', type: 'int', key: 'fk' },
+          { name: 'product', type: 'text' },
+          { name: 'qty', type: 'int' }
+        ],
+        rows: [
+          { id: 1, order_id: 101, product: 'Notebook', qty: 2 },
+          { id: 2, order_id: 101, product: 'Pen', qty: 5 },
+          { id: 3, order_id: 102, product: 'Backpack', qty: 1 }
+        ]
+      }
+    ];
+
+    const relationships = [
+      { from: 'Orders', fromField: 'customer_id', to: 'Customers', toField: 'id', label: '1..*' },
+      { from: 'Order_Items', fromField: 'order_id', to: 'Orders', toField: 'id', label: '1..*' }
+    ];
+
+    const SCENE = { width: 1220, height: 600 };
+    const DEFAULT_POSITIONS = {
+      Customers: { x: 62, y: 138 },
+      Orders: { x: 467, y: 112 },
+      Order_Items: { x: 872, y: 86 }
+    };
+    const STORAGE = {
+      positions: 'erd-demo.positions.v1',
+      theme: 'erd-demo.theme',
+      zoom: 'erd-demo.zoom',
+      relationships: 'erd-demo.relationships'
+    };
+    const MIN_ZOOM = 0.35;
+    const MAX_ZOOM = 1.8;
+
+    const elements = {
+      viewport: document.getElementById('viewport'),
+      stage: document.getElementById('stage'),
+      scene: document.getElementById('scene'),
+      connectors: document.getElementById('connectors'),
+      search: document.getElementById('searchInput'),
+      clearSearch: document.getElementById('clearSearch'),
+      noResults: document.getElementById('noResults'),
+      zoomReadout: document.getElementById('zoomReadout'),
+      dataPanel: document.getElementById('dataPanel'),
+      dataPanelTitle: document.getElementById('dataPanelTitle'),
+      dataPanelSummary: document.getElementById('dataPanelSummary'),
+      dataTable: document.getElementById('dataTable'),
+      closeData: document.getElementById('closeData'),
+      relationshipsToggle: document.getElementById('relationshipsToggle'),
+      themeToggle: document.getElementById('themeToggle'),
+      themeIcon: document.getElementById('themeIcon'),
+      themeLabel: document.getElementById('themeLabel'),
+      announcer: document.getElementById('announcer')
+    };
+
+    const cards = new Map();
+    let positions = loadJSON(STORAGE.positions, DEFAULT_POSITIONS);
+    let zoom = clamp(Number(loadValue(STORAGE.zoom, 1)), MIN_ZOOM, MAX_ZOOM);
+    let relationshipsVisible = loadValue(STORAGE.relationships, 'true') !== 'false';
+    let selectedTable = null;
+    let drag = null;
+    let suppressOpenUntil = 0;
+    let connectorFrame = 0;
+    let fitOnResize = !hasStoredValue(STORAGE.zoom);
+
+    function hasStoredValue(key) {
+      try { return localStorage.getItem(key) !== null; } catch (_) { return false; }
+    }
+
+    function loadValue(key, fallback) {
+      try { return localStorage.getItem(key) ?? fallback; } catch (_) { return fallback; }
+    }
+
+    function loadJSON(key, fallback) {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(key));
+        return parsed && typeof parsed === 'object' ? parsed : structuredClone(fallback);
+      } catch (_) {
+        return structuredClone(fallback);
+      }
+    }
+
+    function saveValue(key, value) {
+      try { localStorage.setItem(key, String(value)); } catch (_) {}
+    }
+
+    function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+
+    function iconGrip() {
+      return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="8" cy="6" r="1.5"></circle><circle cx="16" cy="6" r="1.5"></circle><circle cx="8" cy="12" r="1.5"></circle><circle cx="16" cy="12" r="1.5"></circle><circle cx="8" cy="18" r="1.5"></circle><circle cx="16" cy="18" r="1.5"></circle></svg>';
+    }
+
+    function renderCards() {
+      schema.forEach((table) => {
+        const card = document.createElement('article');
+        card.className = 'table-card';
+        card.dataset.table = table.name;
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', `${table.name} table, ${table.fields.length} fields. Press Enter to view sample rows.`);
+
+        const header = document.createElement('div');
+        header.className = 'table-header';
+        header.dataset.dragHandle = '';
+        header.title = `Drag ${table.name}`;
+
+        const titleWrap = document.createElement('div');
+        titleWrap.className = 'table-title-wrap';
+        const title = document.createElement('span');
+        title.className = 'table-title';
+        title.textContent = table.name;
+        const meta = document.createElement('span');
+        meta.className = 'table-meta';
+        meta.textContent = `${table.fields.length} fields · ${table.rows.length} sample rows`;
+        titleWrap.append(title, meta);
+
+        const grip = document.createElement('span');
+        grip.className = 'drag-grip';
+        grip.setAttribute('aria-hidden', 'true');
+        grip.innerHTML = iconGrip();
+        header.append(titleWrap, grip);
+
+        const list = document.createElement('ul');
+        list.className = 'field-list';
+        table.fields.forEach((field) => {
+          const row = document.createElement('li');
+          row.className = 'field-row';
+          row.dataset.field = field.name;
+          if (field.key) row.classList.add(`is-${field.key}`);
+
+          const fieldName = document.createElement('span');
+          fieldName.className = 'field-name';
+          fieldName.textContent = field.name;
+          row.append(fieldName);
+
+          if (field.key) {
+            const badge = document.createElement('span');
+            badge.className = `badge ${field.key}`;
+            badge.textContent = field.key.toUpperCase();
+            row.append(badge);
+          } else {
+            row.append(document.createElement('span'));
+          }
+
+          const type = document.createElement('span');
+          type.className = 'field-type';
+          type.textContent = field.type;
+          row.append(type);
+          list.append(row);
+        });
+
+        card.append(header, list);
+        elements.scene.append(card);
+        cards.set(table.name, card);
+
+        card.addEventListener('click', () => {
+          if (performance.now() >= suppressOpenUntil) showTable(table.name);
+        });
+        card.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            showTable(table.name);
+          }
+        });
+        header.addEventListener('pointerdown', (event) => startDrag(event, table.name));
+      });
+
+      recoverPositions();
+      applyPositions();
+    }
+
+    function recoverPositions() {
+      const recovered = {};
+      schema.forEach((table) => {
+        const fallback = DEFAULT_POSITIONS[table.name];
+        const candidate = positions[table.name] || fallback;
+        const card = cards.get(table.name);
+        const x = Number.isFinite(Number(candidate.x)) ? Number(candidate.x) : fallback.x;
+        const y = Number.isFinite(Number(candidate.y)) ? Number(candidate.y) : fallback.y;
+        recovered[table.name] = {
+          x: clamp(x, 16, SCENE.width - card.offsetWidth - 16),
+          y: clamp(y, 16, SCENE.height - card.offsetHeight - 16)
+        };
+      });
+      positions = recovered;
+    }
+
+    function applyPositions() {
+      cards.forEach((card, name) => {
+        card.style.left = `${positions[name].x}px`;
+        card.style.top = `${positions[name].y}px`;
+      });
+      scheduleConnectors();
+    }
+
+    function startDrag(event, name) {
+      if (event.button !== 0 || !event.isPrimary) return;
+      const card = cards.get(name);
+      event.preventDefault();
+      card.focus({ preventScroll: true });
+      card.classList.add('dragging');
+      event.currentTarget.setPointerCapture(event.pointerId);
+      drag = {
+        pointerId: event.pointerId,
+        handle: event.currentTarget,
+        card,
+        name,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        startX: positions[name].x,
+        startY: positions[name].y,
+        moved: false
+      };
+      drag.handle.addEventListener('pointermove', moveDrag);
+      drag.handle.addEventListener('pointerup', endDrag);
+      drag.handle.addEventListener('pointercancel', endDrag);
+    }
+
+    function moveDrag(event) {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const dx = (event.clientX - drag.startClientX) / zoom;
+      const dy = (event.clientY - drag.startClientY) / zoom;
+      if (Math.hypot(dx, dy) > 4) drag.moved = true;
+      positions[drag.name] = {
+        x: clamp(drag.startX + dx, 16, SCENE.width - drag.card.offsetWidth - 16),
+        y: clamp(drag.startY + dy, 16, SCENE.height - drag.card.offsetHeight - 16)
+      };
+      drag.card.style.left = `${positions[drag.name].x}px`;
+      drag.card.style.top = `${positions[drag.name].y}px`;
+      fitOnResize = false;
+      scheduleConnectors();
+    }
+
+    function endDrag(event) {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const completed = drag;
+      completed.card.classList.remove('dragging');
+      completed.handle.removeEventListener('pointermove', moveDrag);
+      completed.handle.removeEventListener('pointerup', endDrag);
+      completed.handle.removeEventListener('pointercancel', endDrag);
+      if (completed.handle.hasPointerCapture(event.pointerId)) completed.handle.releasePointerCapture(event.pointerId);
+      if (completed.moved) {
+        suppressOpenUntil = performance.now() + 300;
+        saveValue(STORAGE.positions, JSON.stringify(positions));
+        announce(`${completed.name} position saved`);
+      }
+      drag = null;
+      scheduleConnectors();
+    }
+
+    function showTable(name) {
+      const table = schema.find((item) => item.name === name);
+      if (!table) return;
+      selectedTable = name;
+      cards.forEach((card, cardName) => card.classList.toggle('active', cardName === name));
+      elements.dataPanelTitle.textContent = table.name;
+      elements.dataPanelSummary.textContent = `${table.rows.length} sample row${table.rows.length === 1 ? '' : 's'} · demo data`;
+      elements.dataTable.replaceChildren();
+
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      table.fields.forEach((field) => {
+        const th = document.createElement('th');
+        th.scope = 'col';
+        th.textContent = field.name;
+        headerRow.append(th);
+      });
+      thead.append(headerRow);
+
+      const tbody = document.createElement('tbody');
+      table.rows.forEach((record) => {
+        const row = document.createElement('tr');
+        table.fields.forEach((field) => {
+          const cell = document.createElement('td');
+          cell.textContent = record[field.name];
+          row.append(cell);
+        });
+        tbody.append(row);
+      });
+      elements.dataTable.append(thead, tbody);
+      elements.dataPanel.hidden = false;
+      announce(`${name} sample data opened`);
+      elements.dataPanel.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
+    }
+
+    function closeDataPanel({ restoreFocus = true } = {}) {
+      if (elements.dataPanel.hidden) return;
+      elements.dataPanel.hidden = true;
+      const previous = selectedTable;
+      selectedTable = null;
+      cards.forEach((card) => card.classList.remove('active'));
+      if (restoreFocus && previous && !cards.get(previous).hidden) cards.get(previous).focus({ preventScroll: true });
+      announce('Sample data closed');
+    }
+
+    function fieldElement(tableName, fieldName) {
+      return cards.get(tableName)?.querySelector(`[data-field="${fieldName}"]`);
+    }
+
+    function scheduleConnectors() {
+      cancelAnimationFrame(connectorFrame);
+      connectorFrame = requestAnimationFrame(drawConnectors);
+    }
+
+    function drawConnectors() {
+      elements.connectors.replaceChildren();
+      if (!relationshipsVisible) return;
+      const sceneRect = elements.scene.getBoundingClientRect();
+
+      relationships.forEach((relationship) => {
+        const fromCard = cards.get(relationship.from);
+        const toCard = cards.get(relationship.to);
+        if (!fromCard || !toCard || fromCard.hidden || toCard.hidden) return;
+        const fromField = fieldElement(relationship.from, relationship.fromField);
+        const toField = fieldElement(relationship.to, relationship.toField);
+        const fromRect = fromField.getBoundingClientRect();
+        const toRect = toField.getBoundingClientRect();
+        const fromCardRect = fromCard.getBoundingClientRect();
+        const toCardRect = toCard.getBoundingClientRect();
+        const fromCenter = fromCardRect.left + fromCardRect.width / 2;
+        const toCenter = toCardRect.left + toCardRect.width / 2;
+        const sourceLeftOfTarget = fromCenter < toCenter;
+        const x1 = ((sourceLeftOfTarget ? fromRect.right : fromRect.left) - sceneRect.left) / zoom;
+        const y1 = (fromRect.top + fromRect.height / 2 - sceneRect.top) / zoom;
+        const x2 = ((sourceLeftOfTarget ? toRect.left : toRect.right) - sceneRect.left) / zoom;
+        const y2 = (toRect.top + toRect.height / 2 - sceneRect.top) / zoom;
+        const span = Math.abs(x2 - x1);
+        const bend = Math.max(54, span * 0.46);
+        const direction = sourceLeftOfTarget ? 1 : -1;
+        const pathData = `M ${x1} ${y1} C ${x1 + bend * direction} ${y1}, ${x2 - bend * direction} ${y2}, ${x2} ${y2}`;
+
+        const path = svgElement('path', { d: pathData, class: 'relationship-path' });
+        const sourceNode = svgElement('circle', { cx: x1, cy: y1, r: 4, class: 'relationship-node' });
+        const targetNode = svgElement('circle', { cx: x2, cy: y2, r: 4, class: 'relationship-node' });
+        elements.connectors.append(path, sourceNode, targetNode);
+
+        const labelX = (x1 + x2) / 2;
+        const labelY = (y1 + y2) / 2 - 7;
+        const labelBg = svgElement('rect', { x: labelX - 18, y: labelY - 11, width: 36, height: 18, rx: 7, class: 'relationship-label-bg' });
+        const label = svgElement('text', { x: labelX, y: labelY + 2, 'text-anchor': 'middle', class: 'relationship-label' });
+        label.textContent = relationship.label;
+        elements.connectors.append(labelBg, label);
+      });
+    }
+
+    function svgElement(tag, attributes) {
+      const element = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      Object.entries(attributes).forEach(([name, value]) => element.setAttribute(name, value));
+      return element;
+    }
+
+    function updateStageSize() {
+      elements.scene.style.transform = `scale(${zoom})`;
+      elements.stage.style.width = `${SCENE.width * zoom}px`;
+      elements.stage.style.height = `${SCENE.height * zoom}px`;
+      elements.zoomReadout.textContent = `${Math.round(zoom * 100)}%`;
+      scheduleConnectors();
+    }
+
+    function setZoom(nextZoom, { persist = true, center = true } = {}) {
+      const oldZoom = zoom;
+      const logicalCenter = {
+        x: (elements.viewport.scrollLeft + elements.viewport.clientWidth / 2) / oldZoom,
+        y: (elements.viewport.scrollTop + elements.viewport.clientHeight / 2) / oldZoom
+      };
+      zoom = clamp(Math.round(nextZoom * 100) / 100, MIN_ZOOM, MAX_ZOOM);
+      fitOnResize = false;
+      updateStageSize();
+      if (persist) saveValue(STORAGE.zoom, zoom);
+      if (center) {
+        requestAnimationFrame(() => {
+          elements.viewport.scrollLeft = logicalCenter.x * zoom - elements.viewport.clientWidth / 2;
+          elements.viewport.scrollTop = logicalCenter.y * zoom - elements.viewport.clientHeight / 2;
+        });
+      }
+    }
+
+    function fitToView({ persist = true } = {}) {
+      const visibleCards = [...cards.values()].filter((card) => !card.hidden);
+      if (!visibleCards.length) return;
+      const bounds = visibleCards.reduce((result, card) => {
+        const position = positions[card.dataset.table];
+        return {
+          left: Math.min(result.left, position.x),
+          top: Math.min(result.top, position.y),
+          right: Math.max(result.right, position.x + card.offsetWidth),
+          bottom: Math.max(result.bottom, position.y + card.offsetHeight)
+        };
+      }, { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
+      const padding = 52;
+      const width = bounds.right - bounds.left + padding * 2;
+      const height = bounds.bottom - bounds.top + padding * 2;
+      zoom = clamp(Math.min(elements.viewport.clientWidth / width, elements.viewport.clientHeight / height, 1.45), MIN_ZOOM, MAX_ZOOM);
+      zoom = Math.round(zoom * 100) / 100;
+      fitOnResize = true;
+      updateStageSize();
+      if (persist) saveValue(STORAGE.zoom, zoom);
+      requestAnimationFrame(() => {
+        const centerX = (bounds.left + bounds.right) / 2;
+        const centerY = (bounds.top + bounds.bottom) / 2;
+        elements.viewport.scrollLeft = centerX * zoom - elements.viewport.clientWidth / 2;
+        elements.viewport.scrollTop = centerY * zoom - elements.viewport.clientHeight / 2;
+      });
+      announce(`Diagram fitted at ${Math.round(zoom * 100)} percent`);
+    }
+
+    function autoLayout({ fit = true } = {}) {
+      positions = structuredClone(DEFAULT_POSITIONS);
+      recoverPositions();
+      applyPositions();
+      saveValue(STORAGE.positions, JSON.stringify(positions));
+      if (fit) requestAnimationFrame(() => fitToView());
+      announce('Default table layout restored');
+    }
+
+    function resetAll() {
+      Object.values(STORAGE).forEach((key) => {
+        try { localStorage.removeItem(key); } catch (_) {}
+      });
+      document.documentElement.dataset.theme = 'dark';
+      relationshipsVisible = true;
+      elements.relationshipsToggle.setAttribute('aria-pressed', 'true');
+      elements.search.value = '';
+      applyFilter();
+      updateThemeControl();
+      closeDataPanel({ restoreFocus: false });
+      autoLayout({ fit: true });
+      announce('Layout and viewer preferences reset');
+    }
+
+    function applyFilter() {
+      const query = elements.search.value.trim().toLocaleLowerCase();
+      let visibleCount = 0;
+      schema.forEach((table) => {
+        const searchable = [table.name, ...table.fields.map((field) => field.name)].join(' ').toLocaleLowerCase();
+        const matches = !query || searchable.includes(query);
+        cards.get(table.name).hidden = !matches;
+        if (matches) visibleCount += 1;
+      });
+      elements.clearSearch.classList.toggle('visible', Boolean(query));
+      elements.noResults.classList.toggle('visible', visibleCount === 0);
+      scheduleConnectors();
+      announce(`${visibleCount} table${visibleCount === 1 ? '' : 's'} visible`);
+    }
+
+    function toggleRelationships() {
+      relationshipsVisible = !relationshipsVisible;
+      elements.relationshipsToggle.setAttribute('aria-pressed', String(relationshipsVisible));
+      saveValue(STORAGE.relationships, relationshipsVisible);
+      scheduleConnectors();
+      announce(`Relationships ${relationshipsVisible ? 'shown' : 'hidden'}`);
+    }
+
+    function updateThemeControl() {
+      const dark = document.documentElement.dataset.theme !== 'light';
+      elements.themeLabel.textContent = dark ? 'Light' : 'Dark';
+      elements.themeToggle.setAttribute('aria-label', `Switch to ${dark ? 'light' : 'dark'} theme`);
+      elements.themeToggle.title = `Switch to ${dark ? 'light' : 'dark'} theme`;
+      elements.themeIcon.innerHTML = dark
+        ? '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>'
+        : '<path d="M20.5 15.2A8.5 8.5 0 0 1 8.8 3.5 8.5 8.5 0 1 0 20.5 15.2Z"></path>';
+    }
+
+    function toggleTheme() {
+      const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+      document.documentElement.dataset.theme = next;
+      saveValue(STORAGE.theme, next);
+      updateThemeControl();
+      scheduleConnectors();
+      announce(`${next} theme enabled`);
+    }
+
+    function reducedMotion() { return matchMedia('(prefers-reduced-motion: reduce)').matches; }
+    function announce(message) { elements.announcer.textContent = message; }
+
+    document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom - 0.1));
+    document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom + 0.1));
+    document.getElementById('fitView').addEventListener('click', () => fitToView());
+    document.getElementById('autoLayout').addEventListener('click', () => autoLayout());
+    document.getElementById('resetAll').addEventListener('click', resetAll);
+    elements.relationshipsToggle.addEventListener('click', toggleRelationships);
+    elements.themeToggle.addEventListener('click', toggleTheme);
+    elements.closeData.addEventListener('click', () => closeDataPanel());
+    elements.search.addEventListener('input', applyFilter);
+    elements.clearSearch.addEventListener('click', () => {
+      elements.search.value = '';
+      applyFilter();
+      elements.search.focus();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+      if (event.key === 'Escape' && !elements.dataPanel.hidden) {
+        event.preventDefault();
+        closeDataPanel();
+      } else if (event.key === '/' && !typing) {
+        event.preventDefault();
+        elements.search.focus();
+      } else if (!typing && (event.key === '+' || event.key === '=')) {
+        event.preventDefault();
+        setZoom(zoom + 0.1);
+      } else if (!typing && event.key === '-') {
+        event.preventDefault();
+        setZoom(zoom - 0.1);
+      } else if (!typing && event.key === '0') {
+        event.preventDefault();
+        fitToView();
+      } else if (!typing && event.key.toLocaleLowerCase() === 'r') {
+        event.preventDefault();
+        toggleRelationships();
+      }
+    });
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        recoverPositions();
+        applyPositions();
+        if (fitOnResize) fitToView({ persist: false });
+      }, 80);
+    });
+
+    renderCards();
+    updateStageSize();
+    elements.relationshipsToggle.setAttribute('aria-pressed', String(relationshipsVisible));
+    updateThemeControl();
+    applyFilter();
+    if (fitOnResize) requestAnimationFrame(() => fitToView({ persist: false }));
+  </script>
+</body>
+</html>
