@@ -251,29 +251,64 @@
       pointer-events: none;
     }
 
-    .relationship-path {
+    .relationship-path-shadow,
+    .relationship-path,
+    .relationship-path-flow {
       fill: none;
-      stroke: var(--relationship);
-      stroke-width: 1.75;
-      stroke-dasharray: 5 5;
       vector-effect: non-scaling-stroke;
-      opacity: 0.78;
+    }
+
+    .relationship-path-shadow {
+      stroke: var(--relationship);
+      stroke-width: 8;
+      opacity: 0.1;
+      filter: blur(3px);
+    }
+
+    .relationship-path {
+      stroke-width: 2.5;
+      opacity: 0.92;
+    }
+
+    .relationship-path-flow {
+      stroke-width: 1.15;
+      stroke-dasharray: 2 9;
+      stroke-linecap: round;
+      opacity: 0.9;
+      animation: relationship-flow 1.8s linear infinite;
+    }
+
+    @keyframes relationship-flow { to { stroke-dashoffset: -22; } }
+
+    .relationship-node-halo {
+      stroke: none;
+      opacity: 0.14;
     }
 
     .relationship-node {
       fill: var(--canvas);
-      stroke: var(--relationship);
-      stroke-width: 1.75;
+      stroke-width: 2.25;
       vector-effect: non-scaling-stroke;
     }
 
-    .relationship-label-bg { fill: var(--canvas); stroke: var(--border-strong); stroke-width: 1; }
+    .relationship-node-core { stroke: none; }
+    .relationship-node-halo.source, .relationship-node-core.source { fill: var(--pk); }
+    .relationship-node-halo.target, .relationship-node-core.target { fill: var(--fk); }
+    .relationship-node.source { stroke: var(--pk); }
+    .relationship-node.target { stroke: var(--fk); }
+
+    .relationship-label-bg {
+      fill: color-mix(in srgb, var(--canvas) 94%, var(--relationship));
+      stroke: color-mix(in srgb, var(--relationship) 42%, var(--border-strong));
+      stroke-width: 1;
+      filter: drop-shadow(0 3px 7px color-mix(in srgb, var(--bg) 55%, transparent));
+    }
     .relationship-label {
       fill: var(--relationship);
       font-family: var(--font-ui);
       font-size: 10px;
-      font-weight: 750;
-      letter-spacing: 0.03em;
+      font-weight: 800;
+      letter-spacing: 0.055em;
     }
 
     .table-card {
@@ -2296,14 +2331,38 @@ WHERE et.valid_to IS NULL;`;
         const direction = sourceLeftOfTarget ? 1 : -1;
         const pathData = `M ${x1} ${y1} C ${x1 + bend * direction} ${y1}, ${x2 - bend * direction} ${y2}, ${x2} ${y2}`;
 
-        const path = svgElement('path', { d: pathData, class: 'relationship-path' });
-        const sourceNode = svgElement('circle', { cx: x1, cy: y1, r: 4, class: 'relationship-node' });
-        const targetNode = svgElement('circle', { cx: x2, cy: y2, r: 4, class: 'relationship-node' });
-        elements.connectors.append(path, sourceNode, targetNode);
+        const gradientId = `relationship-gradient-${relationship.from}-${relationship.to}`;
+        const gradient = svgElement('linearGradient', {
+          id: gradientId,
+          gradientUnits: 'userSpaceOnUse',
+          x1,
+          y1,
+          x2,
+          y2
+        });
+        gradient.append(
+          svgElement('stop', { offset: '0%', 'stop-color': 'var(--pk)' }),
+          svgElement('stop', { offset: '52%', 'stop-color': 'var(--relationship)' }),
+          svgElement('stop', { offset: '100%', 'stop-color': 'var(--fk)' })
+        );
+        const defs = svgElement('defs', {});
+        defs.append(gradient);
+
+        const pathStroke = `url(#${gradientId})`;
+        const pathShadow = svgElement('path', { d: pathData, class: 'relationship-path-shadow' });
+        const path = svgElement('path', { d: pathData, class: 'relationship-path', stroke: pathStroke });
+        const pathFlow = svgElement('path', { d: pathData, class: 'relationship-path-flow', stroke: pathStroke });
+        const sourceHalo = svgElement('circle', { cx: x1, cy: y1, r: 9, class: 'relationship-node-halo source' });
+        const targetHalo = svgElement('circle', { cx: x2, cy: y2, r: 9, class: 'relationship-node-halo target' });
+        const sourceNode = svgElement('circle', { cx: x1, cy: y1, r: 5.25, class: 'relationship-node source' });
+        const targetNode = svgElement('circle', { cx: x2, cy: y2, r: 5.25, class: 'relationship-node target' });
+        const sourceCore = svgElement('circle', { cx: x1, cy: y1, r: 2, class: 'relationship-node-core source' });
+        const targetCore = svgElement('circle', { cx: x2, cy: y2, r: 2, class: 'relationship-node-core target' });
+        elements.connectors.append(defs, pathShadow, path, pathFlow, sourceHalo, targetHalo, sourceNode, targetNode, sourceCore, targetCore);
 
         const labelX = (x1 + x2) / 2;
         const labelY = (y1 + y2) / 2 - 7;
-        const labelBg = svgElement('rect', { x: labelX - 18, y: labelY - 11, width: 36, height: 18, rx: 7, class: 'relationship-label-bg' });
+        const labelBg = svgElement('rect', { x: labelX - 19, y: labelY - 12, width: 38, height: 20, rx: 8, class: 'relationship-label-bg' });
         const label = svgElement('text', { x: labelX, y: labelY + 2, 'text-anchor': 'middle', class: 'relationship-label' });
         label.textContent = relationship.label;
         elements.connectors.append(labelBg, label);
