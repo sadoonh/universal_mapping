@@ -2,7 +2,20 @@
 
 ### Launch the app
 
-Open [`erd_demo.html`](erd_demo.html) directly in a modern web browser. No installation or server is required.
+Start a local server from the project directory:
+
+```bash
+cd projects/universal_mapping
+python3 -m http.server 8000
+```
+
+Then open:
+
+```text
+http://localhost:8000/erd_demo.html
+```
+
+Alternatively, open [`erd_demo.html`](erd_demo.html) directly without a server.
 
 ## 1. `universal_uid`
 
