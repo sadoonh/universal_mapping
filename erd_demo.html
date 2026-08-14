@@ -746,10 +746,48 @@
     .sql-drawer .close-button svg { width: 15px; height: 15px; stroke-linecap: round; }
     .sql-drawer .close-button:active { background: var(--canvas); transform: scale(0.96); }
 
+    .sql-presets {
+      display: flex;
+      flex: none;
+      gap: 3px;
+      margin-bottom: 10px;
+      padding: 3px;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--canvas) 92%, var(--surface));
+      scrollbar-width: none;
+    }
+
+    .sql-presets::-webkit-scrollbar { display: none; }
+
+    .sql-preset {
+      flex: none;
+      height: 29px;
+      padding: 0 9px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--subtle);
+      font-size: 0.65rem;
+      font-weight: 720;
+      letter-spacing: 0.015em;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background-color 130ms ease, color 130ms ease, box-shadow 130ms ease;
+    }
+
+    .sql-preset:hover { background: var(--surface-hover); color: var(--text); }
+    .sql-preset[aria-selected="true"] {
+      background: var(--accent-soft);
+      color: var(--accent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 23%, transparent);
+    }
+
     .sql-editor-shell {
       position: relative;
       width: 100%;
-      min-height: 214px;
+      min-height: 174px;
       flex: 1;
       overflow: hidden;
       border: 1px solid var(--border-strong);
@@ -974,6 +1012,13 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
               </button>
             </header>
+            <div class="sql-presets" role="tablist" aria-label="Prepared SQL queries">
+              <button class="sql-preset" type="button" role="tab" data-sql-preset="solar-domains" aria-selected="true" aria-controls="sqlEditor">Solar domains</button>
+              <button class="sql-preset" type="button" role="tab" data-sql-preset="solar-uids" aria-selected="false" aria-controls="sqlEditor" tabindex="-1">Solar UIDs</button>
+              <button class="sql-preset" type="button" role="tab" data-sql-preset="unique-solar-uids" aria-selected="false" aria-controls="sqlEditor" tabindex="-1">Unique UIDs</button>
+              <button class="sql-preset" type="button" role="tab" data-sql-preset="domain-history" aria-selected="false" aria-controls="sqlEditor" tabindex="-1">S_A_1 history</button>
+              <button class="sql-preset" type="button" role="tab" data-sql-preset="template-health" aria-selected="false" aria-controls="sqlEditor" tabindex="-1">Template health</button>
+            </div>
             <label class="sr-only" for="sqlEditor">SQL query</label>
             <div class="sql-editor-shell">
               <pre class="sql-highlight" id="sqlHighlight" aria-hidden="true"></pre>
@@ -1058,19 +1103,19 @@
           { name: 'technology', type: 'TEXT', badges: ['nn'] },
           { name: 'estimation_phase', type: 'TEXT', badges: ['nn'] },
           { name: 'name', type: 'TEXT', badges: ['nn'] },
-          { name: 'example_value', type: 'TEXT' },
+          { name: 'value', type: 'TEXT' },
           { name: 'datatype', type: 'TEXT' }
         ],
         constraints: [
           { name: 'uq_domain_variable_mapping', definition: 'UNIQUE (universal_uid, technology, estimation_phase)' }
         ],
         rows: [
-          { domain_uid: 'S_A_1', universal_uid: '1', technology: 'Solar', estimation_phase: 'Assumption', name: 'Solar Capacity', example_value: '250', datatype: 'NUMERIC' },
-          { domain_uid: 'B_A_1', universal_uid: '1', technology: 'Battery', estimation_phase: 'Assumption', name: 'Battery Capacity', example_value: '180', datatype: 'NUMERIC' },
-          { domain_uid: 'W_A_1', universal_uid: '1', technology: 'Wind', estimation_phase: 'Assumption', name: 'Wind Capacity', example_value: '400', datatype: 'NUMERIC' },
-          { domain_uid: 'S_A_2', universal_uid: '2', technology: 'Solar', estimation_phase: 'Assumption', name: 'Project Capacity', example_value: '30000', datatype: 'NUMERIC' },
-          { domain_uid: 'S_E_1', universal_uid: '7', technology: 'Solar', estimation_phase: 'Preestimation', name: 'Preliminary Capacity', example_value: '240', datatype: 'NUMERIC' },
-          { domain_uid: 'S_M_1_1', universal_uid: '12', technology: 'Solar', estimation_phase: 'Model', name: 'Modeled Capacity', example_value: '248', datatype: 'NUMERIC' }
+          { domain_uid: 'S_A_1', universal_uid: '1', technology: 'Solar', estimation_phase: 'Assumption', name: 'Solar Capacity', value: '250', datatype: 'NUMERIC' },
+          { domain_uid: 'B_A_1', universal_uid: '1', technology: 'Battery', estimation_phase: 'Assumption', name: 'Battery Capacity', value: '180', datatype: 'NUMERIC' },
+          { domain_uid: 'W_A_1', universal_uid: '1', technology: 'Wind', estimation_phase: 'Assumption', name: 'Wind Capacity', value: '400', datatype: 'NUMERIC' },
+          { domain_uid: 'S_A_2', universal_uid: '2', technology: 'Solar', estimation_phase: 'Assumption', name: 'Project Capacity', value: '30000', datatype: 'NUMERIC' },
+          { domain_uid: 'S_E_1', universal_uid: '7', technology: 'Solar', estimation_phase: 'Preestimation', name: 'Preliminary Capacity', value: '240', datatype: 'NUMERIC' },
+          { domain_uid: 'S_M_1_1', universal_uid: '12', technology: 'Solar', estimation_phase: 'Model', name: 'Modeled Capacity', value: '248', datatype: 'NUMERIC' }
         ]
       },
       {
@@ -1204,16 +1249,87 @@
 
     function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
 
-    const STARTER_QUERY = `SELECT
-    dv.domain_uid,
-    dv.name,
+    const SQL_PRESETS = {
+      'solar-domains': `SELECT
     et.template_id,
-    et.template_name
-FROM domain_variable dv
-JOIN estimation_template et
-    ON dv.technology = et.technology
-   AND dv.estimation_phase = et.estimation_phase
-WHERE et.valid_to IS NULL;`;
+    et.template_name,
+    et.estimation_phase,
+    et.valid_from,
+    et.valid_to,
+    dv.domain_uid,
+    dv.universal_uid,
+    dv.name,
+    dv.value,
+    dv.datatype
+FROM estimation_template AS et
+JOIN template_domain_variable AS tdv
+    ON tdv.template_id = et.template_id
+JOIN domain_variable AS dv
+    ON dv.domain_uid = tdv.domain_uid
+WHERE et.technology = 'Solar'
+  AND et.valid_from <= CURRENT_DATE
+  AND (et.valid_to IS NULL OR et.valid_to >= CURRENT_DATE)
+ORDER BY et.estimation_phase, et.template_name, dv.domain_uid;`,
+      'solar-uids': `SELECT DISTINCT
+    et.template_id,
+    et.template_name,
+    et.estimation_phase,
+    uv.universal_uid,
+    uv.description,
+    uv.datatype,
+    uv.unit
+FROM estimation_template AS et
+JOIN template_domain_variable AS tdv
+    ON tdv.template_id = et.template_id
+JOIN domain_variable AS dv
+    ON dv.domain_uid = tdv.domain_uid
+JOIN universal_variable AS uv
+    ON uv.universal_uid = dv.universal_uid
+WHERE et.technology = 'Solar'
+  AND et.valid_from <= CURRENT_DATE
+  AND (et.valid_to IS NULL OR et.valid_to >= CURRENT_DATE)
+ORDER BY et.estimation_phase, et.template_name, uv.universal_uid;`,
+      'unique-solar-uids': `SELECT DISTINCT
+    dv.universal_uid
+FROM estimation_template AS et
+JOIN template_domain_variable AS tdv
+    ON tdv.template_id = et.template_id
+JOIN domain_variable AS dv
+    ON dv.domain_uid = tdv.domain_uid
+WHERE et.technology = 'Solar'
+  AND et.valid_from <= CURRENT_DATE
+  AND (et.valid_to IS NULL OR et.valid_to >= CURRENT_DATE)
+ORDER BY dv.universal_uid;`,
+      'domain-history': `SELECT
+    et.template_id,
+    et.template_name,
+    et.technology,
+    et.estimation_phase,
+    et.valid_from,
+    et.valid_to,
+    et.valid_from <= CURRENT_DATE
+      AND (et.valid_to IS NULL OR et.valid_to >= CURRENT_DATE) AS is_current
+FROM template_domain_variable AS tdv
+JOIN estimation_template AS et
+    ON et.template_id = tdv.template_id
+WHERE tdv.domain_uid = 'S_A_1'
+ORDER BY et.valid_from DESC, et.template_id DESC;`,
+      'template-health': `SELECT
+    history.technology,
+    history.estimation_phase,
+    COUNT(DISTINCT current.template_id) AS current_template_count
+FROM estimation_template AS history
+LEFT JOIN estimation_template AS current
+    ON current.technology = history.technology
+   AND current.estimation_phase = history.estimation_phase
+   AND current.valid_from <= CURRENT_DATE
+   AND (current.valid_to IS NULL OR current.valid_to >= CURRENT_DATE)
+GROUP BY history.technology, history.estimation_phase
+HAVING COUNT(DISTINCT current.template_id) <> 1
+ORDER BY history.technology, history.estimation_phase;`
+    };
+    const STARTER_PRESET = 'solar-domains';
+    const STARTER_QUERY = SQL_PRESETS[STARTER_PRESET];
 
     const SQL_HIGHLIGHT_KEYWORDS = new Set((`
       all and any as asc between by case cast cross desc distinct else end except exists
@@ -1613,6 +1729,7 @@ WHERE et.valid_to IS NULL;`;
         if (this.matchWord('null')) return { type: 'literal', value: null };
         if (this.matchWord('true')) return { type: 'literal', value: true };
         if (this.matchWord('false')) return { type: 'literal', value: false };
+        if (this.matchWord('current_date')) return { type: 'literal', value: new Date().toISOString().slice(0, 10) };
         if (this.matchOp('(')) {
           const value = this.parseExpression();
           this.expectOp(')');
@@ -2577,12 +2694,29 @@ WHERE et.valid_to IS NULL;`;
       announce('SQL playground closed');
     }
 
-    function resetSqlEditor() {
-      elements.sqlEditor.value = STARTER_QUERY;
+    function loadSqlPreset(name, { focus = true, announceChange = true } = {}) {
+      const query = SQL_PRESETS[name];
+      if (!query) return;
+      document.querySelectorAll('[data-sql-preset]').forEach((button) => {
+        const selected = button.dataset.sqlPreset === name;
+        button.setAttribute('aria-selected', String(selected));
+        button.tabIndex = selected ? 0 : -1;
+      });
+      elements.sqlEditor.value = query;
+      elements.sqlEditor.scrollTop = 0;
+      elements.sqlEditor.scrollLeft = 0;
       updateSqlHighlight();
       elements.sqlMessage.textContent = '';
       elements.sqlMessage.classList.remove('error');
-      elements.sqlEditor.focus();
+      if (focus) elements.sqlEditor.focus();
+      if (announceChange) {
+        const selected = document.querySelector(`[data-sql-preset="${name}"]`);
+        announce(`${selected?.textContent.trim() || 'Prepared'} query loaded`);
+      }
+    }
+
+    function resetSqlEditor() {
+      loadSqlPreset(STARTER_PRESET);
     }
 
     function runSqlQuery() {
@@ -2624,6 +2758,21 @@ WHERE et.valid_to IS NULL;`;
     elements.closeSql.addEventListener('click', () => closeSqlDrawer());
     elements.runSql.addEventListener('click', runSqlQuery);
     elements.resetSql.addEventListener('click', resetSqlEditor);
+    document.querySelectorAll('[data-sql-preset]').forEach((button, index, buttons) => {
+      button.addEventListener('click', () => loadSqlPreset(button.dataset.sqlPreset));
+      button.addEventListener('keydown', (event) => {
+        let nextIndex = null;
+        if (event.key === 'ArrowRight') nextIndex = (index + 1) % buttons.length;
+        else if (event.key === 'ArrowLeft') nextIndex = (index - 1 + buttons.length) % buttons.length;
+        else if (event.key === 'Home') nextIndex = 0;
+        else if (event.key === 'End') nextIndex = buttons.length - 1;
+        if (nextIndex == null) return;
+        event.preventDefault();
+        const next = buttons[nextIndex];
+        loadSqlPreset(next.dataset.sqlPreset, { focus: false });
+        next.focus();
+      });
+    });
     elements.sqlEditor.addEventListener('input', updateSqlHighlight);
     elements.sqlEditor.addEventListener('scroll', syncSqlHighlightScroll, { passive: true });
     elements.sqlEditor.addEventListener('keydown', (event) => {
