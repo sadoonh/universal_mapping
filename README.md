@@ -91,6 +91,30 @@ This ensures that a universal UID maps to only one domain UID within a given tec
 | 3 | Solar | Model | 2024-06-C | 2024-06-01 | `NULL` |
 | 4 | Battery | Assumption | 2025-02-B | 2025-02-01 | `NULL` |
 
+## 4. `template_domain_variable`
+
+**Purpose:** Connects estimation templates to their domain variables. A template can contain many domain variables, and a domain variable can appear in many template versions.
+
+| Column | Type | Purpose |
+| --- | --- | --- |
+| `template_id` | `INTEGER` | Foreign key to `estimation_template.template_id` and the first part of the composite primary key. |
+| `domain_uid` | `TEXT` | Foreign key to `domain_variable.domain_uid` and the second part of the composite primary key. |
+
+The composite primary key prevents the same domain variable from being assigned to the same template more than once:
+
+```text
+template_id + domain_uid
+```
+
+### Example
+
+| template_id | domain_uid |
+| --- | --- |
+| 101 | S_A_1 |
+| 102 | S_A_1 |
+| 102 | S_A_2 |
+| 103 | S_E_1 |
+
 ## Relationships
 
 ```text
@@ -98,16 +122,18 @@ universal_variable
     |
     | 1:N via universal_uid
     v
-domain_variable
-    |
-    | logical relationship via
-    | technology + estimation_phase
-    v
-estimation_template
+domain_variable                     estimation_template
+    |                                      |
+    | 1:N via domain_uid                   | 1:N via template_id
+    +------------------+-------------------+
+                       v
+            template_domain_variable
 ```
 
 - `universal_variable` to `domain_variable` is a direct foreign-key relationship.
-- `domain_variable` to `estimation_template` is a logical relationship through `technology + estimation_phase`.
+- `domain_variable` to `template_domain_variable` is a direct foreign-key relationship through `domain_uid`.
+- `estimation_template` to `template_domain_variable` is a direct foreign-key relationship through `template_id`.
+- Together, those bridge relationships create a many-to-many relationship between domain variables and estimation templates.
 - `estimation_template` maintains history using `valid_from` and `valid_to`.
 - `universal_variable.domain_uid_list` is a convenience list and should be synchronized from the authoritative mappings stored in `domain_variable`.
 
@@ -116,4 +142,5 @@ estimation_template
 - `universal_variable` is the source of truth for canonical variable meaning, datatype, description, and unit.
 - `domain_variable` is the source of truth for universal UID to domain UID mappings.
 - `estimation_template` is the source of truth for template history by technology and estimation phase.
+- `template_domain_variable` is the source of truth for which domain variables belong to each estimation template.
 - `universal_variable.domain_uid_list` is a denormalized convenience field and should not be maintained independently from `domain_variable`.

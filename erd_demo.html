@@ -1095,11 +1095,32 @@
           { template_id: '201', technology: 'Battery', estimation_phase: 'Assumption', template_name: '2024-03-A', valid_from: '2024-03-01', valid_to: '2025-01-31' },
           { template_id: '202', technology: 'Battery', estimation_phase: 'Assumption', template_name: '2025-02-B', valid_from: '2025-02-01', valid_to: 'NULL' }
         ]
+      },
+      {
+        name: 'template_domain_variable',
+        fields: [
+          { name: 'template_id', type: 'INTEGER', badges: ['pk', 'fk', 'nn'] },
+          { name: 'domain_uid', type: 'TEXT', badges: ['pk', 'fk', 'nn'] }
+        ],
+        constraints: [
+          { name: 'pk_template_domain_variable', definition: 'PRIMARY KEY (template_id, domain_uid)' }
+        ],
+        rows: [
+          { template_id: '101', domain_uid: 'S_A_1' },
+          { template_id: '102', domain_uid: 'S_A_1' },
+          { template_id: '102', domain_uid: 'S_A_2' },
+          { template_id: '103', domain_uid: 'S_E_1' },
+          { template_id: '104', domain_uid: 'S_M_1_1' },
+          { template_id: '201', domain_uid: 'B_A_1' },
+          { template_id: '202', domain_uid: 'B_A_1' }
+        ]
       }
     ];
 
     const relationships = [
-      { from: 'universal_variable', fromField: 'universal_uid', to: 'domain_variable', toField: 'universal_uid', label: '1 : N' }
+      { from: 'universal_variable', fromField: 'universal_uid', to: 'domain_variable', toField: 'universal_uid', label: '1 : N' },
+      { from: 'estimation_template', fromField: 'template_id', to: 'template_domain_variable', toField: 'template_id', label: '1 : N' },
+      { from: 'domain_variable', fromField: 'domain_uid', to: 'template_domain_variable', toField: 'domain_uid', label: '1 : N' }
     ];
 
     const SCENE = { width: 1260, height: 680 };
@@ -1109,7 +1130,8 @@
     const DEFAULT_POSITIONS = {
       universal_variable: { x: 40, y: 142 },
       domain_variable: { x: 462, y: 64 },
-      estimation_template: { x: 884, y: 82 }
+      estimation_template: { x: 884, y: 82 },
+      template_domain_variable: { x: 1306, y: 210 }
     };
     const STORAGE = {
       positions: 'universal-mapping-erd.positions.v1',
@@ -1652,7 +1674,7 @@ WHERE et.valid_to IS NULL;`;
       const aliases = new Set();
       return refs.map((ref) => {
         const table = schema.find((item) => item.name.toLowerCase() === ref.name.toLowerCase());
-        if (!table) throw new SqlPlaygroundError(`Unknown table “${ref.name}”. Use universal_variable, domain_variable, or estimation_template.`);
+        if (!table) throw new SqlPlaygroundError(`Unknown table “${ref.name}”. Use universal_variable, domain_variable, estimation_template, or template_domain_variable.`);
         if (aliases.has(ref.alias)) throw new SqlPlaygroundError(`Table alias “${ref.alias}” is used more than once.`);
         aliases.add(ref.alias);
         return { ref, table };
