@@ -1015,9 +1015,7 @@
             <div class="sql-presets" role="tablist" aria-label="Prepared SQL queries">
               <button class="sql-preset" type="button" role="tab" data-sql-preset="solar-domains" aria-selected="true" aria-controls="sqlEditor">Solar domains</button>
               <button class="sql-preset" type="button" role="tab" data-sql-preset="solar-uids" aria-selected="false" aria-controls="sqlEditor" tabindex="-1">Solar UIDs</button>
-              <button class="sql-preset" type="button" role="tab" data-sql-preset="unique-solar-uids" aria-selected="false" aria-controls="sqlEditor" tabindex="-1">Unique UIDs</button>
               <button class="sql-preset" type="button" role="tab" data-sql-preset="domain-history" aria-selected="false" aria-controls="sqlEditor" tabindex="-1">S_A_1 history</button>
-              <button class="sql-preset" type="button" role="tab" data-sql-preset="template-health" aria-selected="false" aria-controls="sqlEditor" tabindex="-1">Template health</button>
             </div>
             <label class="sr-only" for="sqlEditor">SQL query</label>
             <div class="sql-editor-shell">
@@ -1289,17 +1287,6 @@ WHERE et.technology = 'Solar'
   AND et.valid_from <= CURRENT_DATE
   AND (et.valid_to IS NULL OR et.valid_to >= CURRENT_DATE)
 ORDER BY et.estimation_phase, et.template_name, uv.universal_uid;`,
-      'unique-solar-uids': `SELECT DISTINCT
-    dv.universal_uid
-FROM estimation_template AS et
-JOIN template_domain_variable AS tdv
-    ON tdv.template_id = et.template_id
-JOIN domain_variable AS dv
-    ON dv.domain_uid = tdv.domain_uid
-WHERE et.technology = 'Solar'
-  AND et.valid_from <= CURRENT_DATE
-  AND (et.valid_to IS NULL OR et.valid_to >= CURRENT_DATE)
-ORDER BY dv.universal_uid;`,
       'domain-history': `SELECT
     et.template_id,
     et.template_name,
@@ -1313,20 +1300,7 @@ FROM template_domain_variable AS tdv
 JOIN estimation_template AS et
     ON et.template_id = tdv.template_id
 WHERE tdv.domain_uid = 'S_A_1'
-ORDER BY et.valid_from DESC, et.template_id DESC;`,
-      'template-health': `SELECT
-    history.technology,
-    history.estimation_phase,
-    COUNT(DISTINCT current.template_id) AS current_template_count
-FROM estimation_template AS history
-LEFT JOIN estimation_template AS current
-    ON current.technology = history.technology
-   AND current.estimation_phase = history.estimation_phase
-   AND current.valid_from <= CURRENT_DATE
-   AND (current.valid_to IS NULL OR current.valid_to >= CURRENT_DATE)
-GROUP BY history.technology, history.estimation_phase
-HAVING COUNT(DISTINCT current.template_id) <> 1
-ORDER BY history.technology, history.estimation_phase;`
+ORDER BY et.valid_from DESC, et.template_id DESC;`
     };
     const STARTER_PRESET = 'solar-domains';
     const STARTER_QUERY = SQL_PRESETS[STARTER_PRESET];
