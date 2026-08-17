@@ -84,7 +84,7 @@ Alternatively, open [`erd_demo.html`](erd_demo.html) directly without a server.
 | `template_id` | `INTEGER` | Foreign key to `estimation_template.template_id` and the first part of the composite primary key. |
 | `domain_uid` | `TEXT` | Foreign key to `domain_variable.domain_uid` and the second part of the composite primary key. |
 | `name` | `TEXT` | Domain-specific name captured for this template version. |
-| `default_value` | `TEXT` | Optional template-specific default value. |
+| `sample_value` | `TEXT` | Optional template-specific sample value. |
 | `datatype` | `TEXT` | Domain-specific datatype captured for this template version. |
 
 The composite primary key prevents the same domain variable from being assigned to the same template more than once:
@@ -95,7 +95,7 @@ template_id + domain_uid
 
 ### Example
 
-| template_id | domain_uid | name | default_value | datatype |
+| template_id | domain_uid | name | sample_value | datatype |
 | --- | --- | --- | --- | --- |
 | 101 | S_A_1 | Solar Capacity | 250 | NUMERIC |
 | 101 | S_A_2 | Project Capacity | 30000 | NUMERIC |

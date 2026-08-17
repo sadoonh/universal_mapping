@@ -1156,21 +1156,21 @@
           { name: 'template_id', type: 'INTEGER', badges: ['pk', 'fk', 'nn'] },
           { name: 'domain_uid', type: 'TEXT', badges: ['pk', 'fk', 'nn'] },
           { name: 'name', type: 'TEXT', badges: ['nn'] },
-          { name: 'default_value', type: 'TEXT' },
+          { name: 'sample_value', type: 'TEXT' },
           { name: 'datatype', type: 'TEXT', badges: ['nn'] }
         ],
         constraints: [
           { name: 'pk_template_domain_variable', definition: 'PRIMARY KEY (template_id, domain_uid)' }
         ],
         rows: [
-          { template_id: '101', domain_uid: 'S_A_1', name: 'Solar Capacity', default_value: '250', datatype: 'NUMERIC' },
-          { template_id: '101', domain_uid: 'S_A_2', name: 'Project Capacity', default_value: '30000', datatype: 'NUMERIC' },
-          { template_id: '102', domain_uid: 'S_A_1', name: 'Updated Solar Capacity', default_value: '300', datatype: 'NUMERIC' },
-          { template_id: '102', domain_uid: 'S_A_3', name: 'Solar Operation Date', default_value: 'NULL', datatype: 'DATE' },
-          { template_id: '103', domain_uid: 'S_E_1', name: 'Preliminary Capacity', default_value: '240', datatype: 'NUMERIC' },
-          { template_id: '104', domain_uid: 'S_M_1_1', name: 'Modeled Capacity', default_value: '248', datatype: 'NUMERIC' },
-          { template_id: '201', domain_uid: 'B_A_1', name: 'Battery Capacity', default_value: '180', datatype: 'NUMERIC' },
-          { template_id: '202', domain_uid: 'B_A_1', name: 'Updated Battery Capacity', default_value: '200', datatype: 'NUMERIC' }
+          { template_id: '101', domain_uid: 'S_A_1', name: 'Solar Capacity', sample_value: '250', datatype: 'NUMERIC' },
+          { template_id: '101', domain_uid: 'S_A_2', name: 'Project Capacity', sample_value: '30000', datatype: 'NUMERIC' },
+          { template_id: '102', domain_uid: 'S_A_1', name: 'Updated Solar Capacity', sample_value: '300', datatype: 'NUMERIC' },
+          { template_id: '102', domain_uid: 'S_A_3', name: 'Solar Operation Date', sample_value: 'NULL', datatype: 'DATE' },
+          { template_id: '103', domain_uid: 'S_E_1', name: 'Preliminary Capacity', sample_value: '240', datatype: 'NUMERIC' },
+          { template_id: '104', domain_uid: 'S_M_1_1', name: 'Modeled Capacity', sample_value: '248', datatype: 'NUMERIC' },
+          { template_id: '201', domain_uid: 'B_A_1', name: 'Battery Capacity', sample_value: '180', datatype: 'NUMERIC' },
+          { template_id: '202', domain_uid: 'B_A_1', name: 'Updated Battery Capacity', sample_value: '200', datatype: 'NUMERIC' }
         ]
       }
     ];
@@ -1211,7 +1211,7 @@
           domain_uid: membership.domain_uid,
           universal_uid: domain.universal_uid,
           name: membership.name,
-          default_value: membership.default_value,
+          sample_value: membership.sample_value,
           datatype: membership.datatype,
           description: universal.description,
           unit: universal.unit
@@ -1233,7 +1233,7 @@
           { name: 'domain_uid', type: 'TEXT' },
           { name: 'universal_uid', type: 'INTEGER' },
           { name: 'name', type: 'TEXT' },
-          { name: 'default_value', type: 'TEXT' },
+          { name: 'sample_value', type: 'TEXT' },
           { name: 'datatype', type: 'TEXT' },
           { name: 'description', type: 'TEXT' },
           { name: 'unit', type: 'TEXT' }

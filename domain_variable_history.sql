@@ -22,7 +22,7 @@ SELECT
     tdv.domain_uid,
     dv.universal_uid,
     tdv.name,
-    tdv.default_value,
+    tdv.sample_value,
     tdv.datatype,
     uv.description,
     uv.unit
