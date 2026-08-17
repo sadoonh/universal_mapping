@@ -1083,14 +1083,13 @@
           { name: 'universal_uid', type: 'INTEGER', badges: ['pk'] },
           { name: 'datatype', type: 'TEXT', badges: ['nn'] },
           { name: 'description', type: 'TEXT', badges: ['nn'] },
-          { name: 'unit', type: 'TEXT' },
-          { name: 'domain_uid_list', type: 'TEXT[]' }
+          { name: 'unit', type: 'TEXT' }
         ],
         constraints: [],
         rows: [
-          { universal_uid: '1', datatype: 'NUMERIC', description: 'Installed capacity', unit: 'MW', domain_uid_list: '{S_A_1, B_A_1, W_A_1}' },
-          { universal_uid: '2', datatype: 'NUMERIC', description: 'Total project cost', unit: 'USD', domain_uid_list: '{S_A_2, B_A_2, W_A_2}' },
-          { universal_uid: '3', datatype: 'DATE', description: 'Commercial operation date', unit: 'NULL', domain_uid_list: '{S_A_3, B_A_3}' }
+          { universal_uid: '1', datatype: 'NUMERIC', description: 'Installed capacity', unit: 'MW' },
+          { universal_uid: '2', datatype: 'NUMERIC', description: 'Total project cost', unit: 'USD' },
+          { universal_uid: '3', datatype: 'DATE', description: 'Commercial operation date', unit: 'NULL' }
         ]
       },
       {

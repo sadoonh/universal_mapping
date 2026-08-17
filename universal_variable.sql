@@ -3,6 +3,5 @@ CREATE TABLE universal_variable (
     universal_uid INTEGER PRIMARY KEY,
     datatype      TEXT NOT NULL,
     description   TEXT NOT NULL,
-    unit          TEXT,
-    domain_uid_list   TEXT[]
+    unit          TEXT
 );

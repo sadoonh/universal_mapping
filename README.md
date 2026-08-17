@@ -27,14 +27,13 @@ Alternatively, open [`erd_demo.html`](erd_demo.html) directly without a server.
 | `datatype` | `TEXT` | Defines the canonical datatype expected for the universal variable, such as decimal, text, or date. |
 | `description` | `TEXT` | Business description of what the universal UID represents. Provides the shared semantic meaning of the variable. |
 | `unit` | `TEXT` | Unit of measure for the variable when applicable, such as MW, USD, or %. Can be `NULL` for variables without a unit. |
-| `domain_uid_list` | `TEXT[]` | Convenience list of all domain-specific UIDs associated with the universal UID, such as `{S_A_1,B_A_1,W_A_1}`. This is a denormalized management/reporting field; `domain_variable` should remain the authoritative source for the mapping. |
 
 ### Example
 
-| universal_uid | datatype | description | unit | domain_uid_list |
-| --- | --- | --- | --- | --- |
-| 1 | decimal | Installed capacity | MW | `{S_A_1,B_A_1,W_A_1}` |
-| 2 | decimal | Total project cost | USD | `{S_A_2,B_A_2,W_A_2}` |
+| universal_uid | datatype | description | unit |
+| --- | --- | --- | --- |
+| 1 | decimal | Installed capacity | MW |
+| 2 | decimal | Total project cost | USD |
 
 ## 2. `domain_variable`
 
@@ -135,7 +134,6 @@ domain_variable                     estimation_template
 - `estimation_template` to `template_domain_variable` is a direct foreign-key relationship through `template_id`.
 - Together, those bridge relationships create a many-to-many relationship between domain variables and estimation templates.
 - `estimation_template` maintains history using `valid_from` and `valid_to`.
-- `universal_variable.domain_uid_list` is a convenience list and should be synchronized from the authoritative mappings stored in `domain_variable`.
 
 ## Source-of-Truth Rules
 
@@ -143,4 +141,3 @@ domain_variable                     estimation_template
 - `domain_variable` is the source of truth for universal UID to domain UID mappings.
 - `estimation_template` is the source of truth for template history by technology and estimation phase.
 - `template_domain_variable` is the source of truth for which domain variables belong to each estimation template.
-- `universal_variable.domain_uid_list` is a denormalized convenience field and should not be maintained independently from `domain_variable`.
