@@ -378,7 +378,25 @@
 
     .table-card.dragging .table-header { cursor: grabbing; }
 
-    .table-title-wrap { min-width: 0; }
+    .table-title-wrap { display: flex; min-width: 0; align-items: center; gap: 8px; }
+
+    .table-kind {
+      flex: none;
+      padding: 2px 5px;
+      border: 1px solid color-mix(in srgb, var(--relationship) 38%, transparent);
+      border-radius: 5px;
+      background: color-mix(in srgb, var(--relationship) 12%, transparent);
+      color: var(--relationship);
+      font-size: 0.5rem;
+      font-weight: 850;
+      line-height: 1.3;
+      letter-spacing: 0.08em;
+    }
+
+    .table-card.is-view { border-color: color-mix(in srgb, var(--relationship) 48%, var(--border-strong)); }
+    .table-card.is-view .table-header {
+      background: linear-gradient(90deg, color-mix(in srgb, var(--relationship) 13%, transparent), transparent 72%), var(--surface-raised);
+    }
 
     .table-title {
       display: block;
@@ -1014,6 +1032,8 @@
             </header>
             <div class="sql-presets" role="tablist" aria-label="Prepared SQL queries">
               <button class="sql-preset" type="button" role="tab" data-sql-preset="solar-domains" aria-selected="true" aria-controls="sqlEditor">Solar domains</button>
+              <button class="sql-preset" type="button" role="tab" data-sql-preset="latest-uids" aria-selected="false" aria-controls="sqlEditor" tabindex="-1">Latest UIDs</button>
+              <button class="sql-preset" type="button" role="tab" data-sql-preset="uid-history" aria-selected="false" aria-controls="sqlEditor" tabindex="-1">UID history</button>
             </div>
             <label class="sr-only" for="sqlEditor">SQL query</label>
             <div class="sql-editor-shell">
@@ -1200,6 +1220,7 @@
 
       return {
         name: 'domain_variable_history',
+        kind: 'view',
         fields: [
           { name: 'template_id', type: 'INTEGER' },
           { name: 'template_name', type: 'TEXT' },
@@ -1222,6 +1243,7 @@
     }
 
     const queryViews = [buildDomainVariableHistoryView()];
+    const diagramObjects = [...schema, ...queryViews];
 
     const relationships = [
       { from: 'universal_variable', fromField: 'universal_uid', to: 'domain_variable', toField: 'universal_uid', label: '1 : N' },
@@ -1237,10 +1259,11 @@
       universal_variable: { x: 40, y: 142 },
       domain_variable: { x: 462, y: 64 },
       template_domain_variable: { x: 884, y: 210 },
-      estimation_template: { x: 1306, y: 82 }
+      estimation_template: { x: 1306, y: 82 },
+      domain_variable_history: { x: 1728, y: 40 }
     };
     const STORAGE = {
-      positions: 'universal-mapping-erd.positions.v2',
+      positions: 'universal-mapping-erd.positions.v3',
       theme: 'universal-mapping-erd.theme',
       zoom: 'universal-mapping-erd.zoom',
       relationships: 'universal-mapping-erd.relationships',
@@ -1315,8 +1338,15 @@
 FROM domain_variable_history
 WHERE technology = 'Solar'
   AND estimation_phase = 'Assumption'
-  AND is_latest IS TRUE
-ORDER BY domain_uid;`
+  AND is_latest;`,
+      'latest-uids': `SELECT DISTINCT universal_uid
+FROM domain_variable_history
+WHERE technology = 'Solar'
+  AND is_latest;`,
+      'uid-history': `SELECT *
+FROM domain_variable_history
+WHERE domain_uid = 'S_A_1'
+ORDER BY valid_from DESC;`
     };
     const STARTER_PRESET = 'solar-domains';
     const STARTER_QUERY = SQL_PRESETS[STARTER_PRESET];
@@ -1780,7 +1810,7 @@ ORDER BY domain_uid;`
       const refs = query.from ? [query.from, ...query.joins.map((join) => join.source)] : [];
       const aliases = new Set();
       return refs.map((ref) => {
-        const table = [...schema, ...queryViews].find((item) => item.name.toLowerCase() === ref.name.toLowerCase());
+        const table = diagramObjects.find((item) => item.name.toLowerCase() === ref.name.toLowerCase());
         if (!table) throw new SqlPlaygroundError(`Unknown table or view “${ref.name}”. Use universal_variable, domain_variable, estimation_template, template_domain_variable, or domain_variable_history.`);
         if (aliases.has(ref.alias)) throw new SqlPlaygroundError(`Table alias “${ref.alias}” is used more than once.`);
         aliases.add(ref.alias);
@@ -2103,13 +2133,14 @@ ORDER BY domain_uid;`
     }
 
     function renderCards() {
-      schema.forEach((table) => {
+      diagramObjects.forEach((table) => {
         const card = document.createElement('article');
         card.className = 'table-card';
+        if (table.kind === 'view') card.classList.add('is-view');
         card.dataset.table = table.name;
         card.tabIndex = 0;
         card.setAttribute('role', 'button');
-        card.setAttribute('aria-label', `${table.name}, ${table.fields.length} fields, ${table.rows.length} rows`);
+        card.setAttribute('aria-label', `${table.name} ${table.kind === 'view' ? 'view' : 'table'}, ${table.fields.length} fields, ${table.rows.length} rows`);
 
         const header = document.createElement('div');
         header.className = 'table-header';
@@ -2122,6 +2153,12 @@ ORDER BY domain_uid;`
         title.className = 'table-title';
         title.textContent = table.name;
         titleWrap.append(title);
+        if (table.kind === 'view') {
+          const kind = document.createElement('span');
+          kind.className = 'table-kind';
+          kind.textContent = 'VIEW';
+          titleWrap.append(kind);
+        }
 
         const actions = document.createElement('div');
         actions.className = 'table-actions';
@@ -2203,7 +2240,7 @@ ORDER BY domain_uid;`
 
     function recoverPositions() {
       const recovered = {};
-      schema.forEach((table) => {
+      diagramObjects.forEach((table) => {
         const fallback = DEFAULT_POSITIONS[table.name];
         const candidate = positions[table.name] || fallback;
         recovered[table.name] = {
@@ -2225,8 +2262,8 @@ ORDER BY domain_uid;`
     }
 
     function resizeSceneToContent() {
-      const right = Math.max(...schema.map((table) => positions[table.name].x + (cards.get(table.name)?.offsetWidth || 0)));
-      const bottom = Math.max(...schema.map((table) => positions[table.name].y + (cards.get(table.name)?.offsetHeight || 0)));
+      const right = Math.max(...diagramObjects.map((table) => positions[table.name].x + (cards.get(table.name)?.offsetWidth || 0)));
+      const bottom = Math.max(...diagramObjects.map((table) => positions[table.name].y + (cards.get(table.name)?.offsetHeight || 0)));
       SCENE.width = Math.max(SCENE_BASE.width, right + CANVAS_MARGIN);
       SCENE.height = Math.max(SCENE_BASE.height, bottom + CANVAS_MARGIN);
     }
@@ -2333,7 +2370,7 @@ ORDER BY domain_uid;`
     }
 
     function showTable(name) {
-      const table = schema.find((item) => item.name === name);
+      const table = diagramObjects.find((item) => item.name === name);
       if (!table) return;
       selectedTable = name;
       dataPanelMode = 'sample';
