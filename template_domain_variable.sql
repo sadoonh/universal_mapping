@@ -1,7 +1,10 @@
 -- Bridge table connecting estimation templates to their domain variables.
 CREATE TABLE template_domain_variable (
-    template_id  INTEGER NOT NULL,
-    domain_uid   TEXT NOT NULL,
+    template_id    INTEGER NOT NULL,
+    domain_uid     TEXT NOT NULL,
+    name           TEXT NOT NULL,
+    default_value  TEXT,
+    datatype       TEXT NOT NULL,
 
     CONSTRAINT pk_template_domain_variable
         PRIMARY KEY (template_id, domain_uid),

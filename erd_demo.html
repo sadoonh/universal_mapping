@@ -1014,8 +1014,6 @@
             </header>
             <div class="sql-presets" role="tablist" aria-label="Prepared SQL queries">
               <button class="sql-preset" type="button" role="tab" data-sql-preset="solar-domains" aria-selected="true" aria-controls="sqlEditor">Solar domains</button>
-              <button class="sql-preset" type="button" role="tab" data-sql-preset="solar-uids" aria-selected="false" aria-controls="sqlEditor" tabindex="-1">Solar UIDs</button>
-              <button class="sql-preset" type="button" role="tab" data-sql-preset="domain-history" aria-selected="false" aria-controls="sqlEditor" tabindex="-1">S_A_1 history</button>
             </div>
             <label class="sr-only" for="sqlEditor">SQL query</label>
             <div class="sql-editor-shell">
@@ -1096,23 +1094,17 @@
         name: 'domain_variable',
         fields: [
           { name: 'domain_uid', type: 'TEXT', badges: ['pk'] },
-          { name: 'universal_uid', type: 'INTEGER', badges: ['fk', 'nn'] },
-          { name: 'technology', type: 'TEXT', badges: ['nn'] },
-          { name: 'estimation_phase', type: 'TEXT', badges: ['nn'] },
-          { name: 'name', type: 'TEXT', badges: ['nn'] },
-          { name: 'value', type: 'TEXT' },
-          { name: 'datatype', type: 'TEXT' }
+          { name: 'universal_uid', type: 'INTEGER', badges: ['fk', 'nn'] }
         ],
-        constraints: [
-          { name: 'uq_domain_variable_mapping', definition: 'UNIQUE (universal_uid, technology, estimation_phase)' }
-        ],
+        constraints: [],
         rows: [
-          { domain_uid: 'S_A_1', universal_uid: '1', technology: 'Solar', estimation_phase: 'Assumption', name: 'Solar Capacity', value: '250', datatype: 'NUMERIC' },
-          { domain_uid: 'B_A_1', universal_uid: '1', technology: 'Battery', estimation_phase: 'Assumption', name: 'Battery Capacity', value: '180', datatype: 'NUMERIC' },
-          { domain_uid: 'W_A_1', universal_uid: '1', technology: 'Wind', estimation_phase: 'Assumption', name: 'Wind Capacity', value: '400', datatype: 'NUMERIC' },
-          { domain_uid: 'S_A_2', universal_uid: '2', technology: 'Solar', estimation_phase: 'Assumption', name: 'Project Capacity', value: '30000', datatype: 'NUMERIC' },
-          { domain_uid: 'S_E_1', universal_uid: '7', technology: 'Solar', estimation_phase: 'Preestimation', name: 'Preliminary Capacity', value: '240', datatype: 'NUMERIC' },
-          { domain_uid: 'S_M_1_1', universal_uid: '12', technology: 'Solar', estimation_phase: 'Model', name: 'Modeled Capacity', value: '248', datatype: 'NUMERIC' }
+          { domain_uid: 'S_A_1', universal_uid: '1' },
+          { domain_uid: 'B_A_1', universal_uid: '1' },
+          { domain_uid: 'W_A_1', universal_uid: '1' },
+          { domain_uid: 'S_A_2', universal_uid: '2' },
+          { domain_uid: 'S_A_3', universal_uid: '3' },
+          { domain_uid: 'S_E_1', universal_uid: '7' },
+          { domain_uid: 'S_M_1_1', universal_uid: '12' }
         ]
       },
       {
@@ -1142,22 +1134,94 @@
         name: 'template_domain_variable',
         fields: [
           { name: 'template_id', type: 'INTEGER', badges: ['pk', 'fk', 'nn'] },
-          { name: 'domain_uid', type: 'TEXT', badges: ['pk', 'fk', 'nn'] }
+          { name: 'domain_uid', type: 'TEXT', badges: ['pk', 'fk', 'nn'] },
+          { name: 'name', type: 'TEXT', badges: ['nn'] },
+          { name: 'default_value', type: 'TEXT' },
+          { name: 'datatype', type: 'TEXT', badges: ['nn'] }
         ],
         constraints: [
           { name: 'pk_template_domain_variable', definition: 'PRIMARY KEY (template_id, domain_uid)' }
         ],
         rows: [
-          { template_id: '101', domain_uid: 'S_A_1' },
-          { template_id: '102', domain_uid: 'S_A_1' },
-          { template_id: '102', domain_uid: 'S_A_2' },
-          { template_id: '103', domain_uid: 'S_E_1' },
-          { template_id: '104', domain_uid: 'S_M_1_1' },
-          { template_id: '201', domain_uid: 'B_A_1' },
-          { template_id: '202', domain_uid: 'B_A_1' }
+          { template_id: '101', domain_uid: 'S_A_1', name: 'Solar Capacity', default_value: '250', datatype: 'NUMERIC' },
+          { template_id: '101', domain_uid: 'S_A_2', name: 'Project Capacity', default_value: '30000', datatype: 'NUMERIC' },
+          { template_id: '102', domain_uid: 'S_A_1', name: 'Updated Solar Capacity', default_value: '300', datatype: 'NUMERIC' },
+          { template_id: '102', domain_uid: 'S_A_3', name: 'Solar Operation Date', default_value: 'NULL', datatype: 'DATE' },
+          { template_id: '103', domain_uid: 'S_E_1', name: 'Preliminary Capacity', default_value: '240', datatype: 'NUMERIC' },
+          { template_id: '104', domain_uid: 'S_M_1_1', name: 'Modeled Capacity', default_value: '248', datatype: 'NUMERIC' },
+          { template_id: '201', domain_uid: 'B_A_1', name: 'Battery Capacity', default_value: '180', datatype: 'NUMERIC' },
+          { template_id: '202', domain_uid: 'B_A_1', name: 'Updated Battery Capacity', default_value: '200', datatype: 'NUMERIC' }
         ]
       }
     ];
+
+    function buildDomainVariableHistoryView() {
+      const table = (name) => schema.find((item) => item.name === name);
+      const templates = table('estimation_template').rows;
+      const memberships = table('template_domain_variable').rows;
+      const domains = new Map(table('domain_variable').rows.map((row) => [row.domain_uid, row]));
+      const universals = new Map(table('universal_variable').rows.map((row) => [String(row.universal_uid), row]));
+      const ranked = new Map();
+      const groups = new Map();
+      templates.forEach((row) => {
+        const key = `${row.technology}\u0000${row.estimation_phase}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(row);
+      });
+      groups.forEach((rows) => rows
+        .sort((left, right) => right.valid_from.localeCompare(left.valid_from) || Number(right.template_id) - Number(left.template_id))
+        .forEach((row, index) => ranked.set(String(row.template_id), index + 1)));
+
+      const today = new Date().toISOString().slice(0, 10);
+      const templateById = new Map(templates.map((row) => [String(row.template_id), row]));
+      const rows = memberships.flatMap((membership) => {
+        const template = templateById.get(String(membership.template_id));
+        const domain = domains.get(membership.domain_uid);
+        const universal = domain && universals.get(String(domain.universal_uid));
+        if (!template || !domain || !universal) return [];
+        return [{
+          template_id: template.template_id,
+          template_name: template.template_name,
+          technology: template.technology,
+          estimation_phase: template.estimation_phase,
+          valid_from: template.valid_from,
+          valid_to: template.valid_to,
+          is_latest: ranked.get(String(template.template_id)) === 1,
+          is_current: template.valid_from <= today && (template.valid_to === 'NULL' || template.valid_to == null || today <= template.valid_to),
+          domain_uid: membership.domain_uid,
+          universal_uid: domain.universal_uid,
+          name: membership.name,
+          default_value: membership.default_value,
+          datatype: membership.datatype,
+          description: universal.description,
+          unit: universal.unit
+        }];
+      });
+
+      return {
+        name: 'domain_variable_history',
+        fields: [
+          { name: 'template_id', type: 'INTEGER' },
+          { name: 'template_name', type: 'TEXT' },
+          { name: 'technology', type: 'TEXT' },
+          { name: 'estimation_phase', type: 'TEXT' },
+          { name: 'valid_from', type: 'DATE' },
+          { name: 'valid_to', type: 'DATE' },
+          { name: 'is_latest', type: 'BOOLEAN' },
+          { name: 'is_current', type: 'BOOLEAN' },
+          { name: 'domain_uid', type: 'TEXT' },
+          { name: 'universal_uid', type: 'INTEGER' },
+          { name: 'name', type: 'TEXT' },
+          { name: 'default_value', type: 'TEXT' },
+          { name: 'datatype', type: 'TEXT' },
+          { name: 'description', type: 'TEXT' },
+          { name: 'unit', type: 'TEXT' }
+        ],
+        rows
+      };
+    }
+
+    const queryViews = [buildDomainVariableHistoryView()];
 
     const relationships = [
       { from: 'universal_variable', fromField: 'universal_uid', to: 'domain_variable', toField: 'universal_uid', label: '1 : N' },
@@ -1247,59 +1311,12 @@
     function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
 
     const SQL_PRESETS = {
-      'solar-domains': `SELECT
-    et.template_id,
-    et.template_name,
-    et.estimation_phase,
-    et.valid_from,
-    et.valid_to,
-    dv.domain_uid,
-    dv.universal_uid,
-    dv.name,
-    dv.value,
-    dv.datatype
-FROM estimation_template AS et
-JOIN template_domain_variable AS tdv
-    ON tdv.template_id = et.template_id
-JOIN domain_variable AS dv
-    ON dv.domain_uid = tdv.domain_uid
-WHERE et.technology = 'Solar'
-  AND et.valid_from <= CURRENT_DATE
-  AND (et.valid_to IS NULL OR et.valid_to >= CURRENT_DATE)
-ORDER BY et.estimation_phase, et.template_name, dv.domain_uid;`,
-      'solar-uids': `SELECT DISTINCT
-    et.template_id,
-    et.template_name,
-    et.estimation_phase,
-    uv.universal_uid,
-    uv.description,
-    uv.datatype,
-    uv.unit
-FROM estimation_template AS et
-JOIN template_domain_variable AS tdv
-    ON tdv.template_id = et.template_id
-JOIN domain_variable AS dv
-    ON dv.domain_uid = tdv.domain_uid
-JOIN universal_variable AS uv
-    ON uv.universal_uid = dv.universal_uid
-WHERE et.technology = 'Solar'
-  AND et.valid_from <= CURRENT_DATE
-  AND (et.valid_to IS NULL OR et.valid_to >= CURRENT_DATE)
-ORDER BY et.estimation_phase, et.template_name, uv.universal_uid;`,
-      'domain-history': `SELECT
-    et.template_id,
-    et.template_name,
-    et.technology,
-    et.estimation_phase,
-    et.valid_from,
-    et.valid_to,
-    et.valid_from <= CURRENT_DATE
-      AND (et.valid_to IS NULL OR et.valid_to >= CURRENT_DATE) AS is_current
-FROM template_domain_variable AS tdv
-JOIN estimation_template AS et
-    ON et.template_id = tdv.template_id
-WHERE tdv.domain_uid = 'S_A_1'
-ORDER BY et.valid_from DESC, et.template_id DESC;`
+      'solar-domains': `SELECT *
+FROM domain_variable_history
+WHERE technology = 'Solar'
+  AND estimation_phase = 'Assumption'
+  AND is_latest IS TRUE
+ORDER BY domain_uid;`
     };
     const STARTER_PRESET = 'solar-domains';
     const STARTER_QUERY = SQL_PRESETS[STARTER_PRESET];
@@ -1622,7 +1639,7 @@ ORDER BY et.valid_from DESC, et.template_id DESC;`
 
       parseTableRef() {
         const name = this.expectIdent('table name');
-        if (this.matchOp('.')) this.fail('Schema-qualified table names are unnecessary; use one of the three sample table names.');
+        if (this.matchOp('.')) this.fail('Schema-qualified names are unnecessary; use an available table or view name.');
         let alias = null;
         if (this.matchWord('as')) alias = this.expectIdent('table alias');
         else if (this.current().type === 'ident' && !SQL_CLAUSE_WORDS.has(this.current().value)) alias = this.expectIdent('table alias');
@@ -1763,8 +1780,8 @@ ORDER BY et.valid_from DESC, et.template_id DESC;`
       const refs = query.from ? [query.from, ...query.joins.map((join) => join.source)] : [];
       const aliases = new Set();
       return refs.map((ref) => {
-        const table = schema.find((item) => item.name.toLowerCase() === ref.name.toLowerCase());
-        if (!table) throw new SqlPlaygroundError(`Unknown table “${ref.name}”. Use universal_variable, domain_variable, estimation_template, or template_domain_variable.`);
+        const table = [...schema, ...queryViews].find((item) => item.name.toLowerCase() === ref.name.toLowerCase());
+        if (!table) throw new SqlPlaygroundError(`Unknown table or view “${ref.name}”. Use universal_variable, domain_variable, estimation_template, template_domain_variable, or domain_variable_history.`);
         if (aliases.has(ref.alias)) throw new SqlPlaygroundError(`Table alias “${ref.alias}” is used more than once.`);
         aliases.add(ref.alias);
         return { ref, table };

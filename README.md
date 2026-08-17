@@ -37,36 +37,21 @@ Alternatively, open [`erd_demo.html`](erd_demo.html) directly without a server.
 
 ## 2. `domain_variable`
 
-**Purpose:** Stores each domain-specific representation of a universal variable. A domain variable belongs to a specific technology and estimation phase, such as Solar + Assumption or Battery + Assumption.
+**Purpose:** Stores each stable domain UID and its canonical universal-variable mapping. Template-specific names, defaults, and datatypes belong to `template_domain_variable` so historical templates remain unchanged.
 
 | Column | Type | Purpose |
 | --- | --- | --- |
-| `domain_uid` | `TEXT` | Primary key for the domain-specific variable, such as `S_A_1`, `B_A_1`, or `S_W_1`. These values are globally unique. |
-| `universal_uid` | `INTEGER` | Foreign key to `universal_variable.universal_uid`. Identifies the canonical business variable that this domain UID represents. |
-| `technology` | `TEXT` | Technology to which the domain variable belongs, such as Solar, Battery, or Wind. |
-| `estimation_phase` | `TEXT` | Estimation phase of the variable, such as Assumption, Preestimation, or Model. |
-| `name` | `TEXT` | Domain-specific name or label for the variable. This can differ from the universal description because each technology or estimation phase may use different terminology. |
-| `value` | `TEXT` | Value associated with the domain variable. Stored as text in the current design to support multiple logical datatypes. |
-| `datatype` | `TEXT` | Domain-specific datatype for the variable. This can be used to describe or validate how the stored value should be interpreted. |
-
-### Key constraint
-
-The following combination is unique:
-
-```text
-universal_uid + technology + estimation_phase
-```
-
-This ensures that a universal UID maps to only one domain UID within a given technology and estimation phase.
+| `domain_uid` | `TEXT` | Primary key for the stable domain-specific identity, such as `S_A_1`, `B_A_1`, or `S_W_1`. |
+| `universal_uid` | `INTEGER` | Foreign key to `universal_variable.universal_uid`. Identifies the canonical business variable represented by this domain UID. |
 
 ### Example
 
-| domain_uid | universal_uid | technology | estimation_phase | name | value | datatype |
-| --- | --- | --- | --- | --- | --- | --- |
-| S_A_1 | 1 | Solar | Assumption | Solar Capacity | 250 | decimal |
-| B_A_1 | 1 | Battery | Assumption | Battery Capacity | 180 | decimal |
-| W_A_1 | 1 | Wind | Assumption | Wind Capacity | 400 | decimal |
-| S_A_2 | 2 | Solar | Assumption | Project Cost | 300000000 | decimal |
+| domain_uid | universal_uid |
+| --- | --- |
+| S_A_1 | 1 |
+| B_A_1 | 1 |
+| W_A_1 | 1 |
+| S_A_2 | 2 |
 
 ## 3. `estimation_template`
 
@@ -98,6 +83,9 @@ This ensures that a universal UID maps to only one domain UID within a given tec
 | --- | --- | --- |
 | `template_id` | `INTEGER` | Foreign key to `estimation_template.template_id` and the first part of the composite primary key. |
 | `domain_uid` | `TEXT` | Foreign key to `domain_variable.domain_uid` and the second part of the composite primary key. |
+| `name` | `TEXT` | Domain-specific name captured for this template version. |
+| `default_value` | `TEXT` | Optional template-specific default value. |
+| `datatype` | `TEXT` | Domain-specific datatype captured for this template version. |
 
 The composite primary key prevents the same domain variable from being assigned to the same template more than once:
 
@@ -107,12 +95,26 @@ template_id + domain_uid
 
 ### Example
 
-| template_id | domain_uid |
-| --- | --- |
-| 101 | S_A_1 |
-| 102 | S_A_1 |
-| 102 | S_A_2 |
-| 103 | S_E_1 |
+| template_id | domain_uid | name | default_value | datatype |
+| --- | --- | --- | --- | --- |
+| 101 | S_A_1 | Solar Capacity | 250 | NUMERIC |
+| 101 | S_A_2 | Project Capacity | 30000 | NUMERIC |
+| 102 | S_A_1 | Updated Solar Capacity | 300 | NUMERIC |
+| 102 | S_A_3 | Solar Operation Date | `NULL` | DATE |
+
+## 5. `domain_variable_history` view
+
+**Purpose:** Provides one read interface containing template metadata, domain identities, version-specific attributes, canonical descriptions, and `is_latest`/`is_current` flags.
+
+```sql
+SELECT *
+FROM domain_variable_history
+WHERE technology = 'Solar'
+  AND estimation_phase = 'Assumption'
+  AND is_latest;
+```
+
+Users can query complete history by removing `is_latest` or filtering by `domain_uid`.
 
 ## Relationships
 
@@ -140,4 +142,5 @@ domain_variable                     estimation_template
 - `universal_variable` is the source of truth for canonical variable meaning, datatype, description, and unit.
 - `domain_variable` is the source of truth for universal UID to domain UID mappings.
 - `estimation_template` is the source of truth for template history by technology and estimation phase.
-- `template_domain_variable` is the source of truth for which domain variables belong to each estimation template.
+- `template_domain_variable` is the source of truth for template membership and version-specific domain names, defaults, and datatypes.
+- `domain_variable_history` is the supported read interface for latest, current, and historical domain-variable queries.
