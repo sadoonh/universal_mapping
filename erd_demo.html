@@ -1192,7 +1192,6 @@
         .sort((left, right) => right.valid_from.localeCompare(left.valid_from) || Number(right.template_id) - Number(left.template_id))
         .forEach((row, index) => ranked.set(String(row.template_id), index + 1)));
 
-      const today = new Date().toISOString().slice(0, 10);
       const templateById = new Map(templates.map((row) => [String(row.template_id), row]));
       const rows = memberships.flatMap((membership) => {
         const template = templateById.get(String(membership.template_id));
@@ -1207,7 +1206,6 @@
           valid_from: template.valid_from,
           valid_to: template.valid_to,
           is_latest: ranked.get(String(template.template_id)) === 1,
-          is_current: template.valid_from <= today && (template.valid_to === 'NULL' || template.valid_to == null || today <= template.valid_to),
           domain_uid: membership.domain_uid,
           universal_uid: domain.universal_uid,
           name: membership.name,
@@ -1229,7 +1227,6 @@
           { name: 'valid_from', type: 'DATE' },
           { name: 'valid_to', type: 'DATE' },
           { name: 'is_latest', type: 'BOOLEAN' },
-          { name: 'is_current', type: 'BOOLEAN' },
           { name: 'domain_uid', type: 'TEXT' },
           { name: 'universal_uid', type: 'INTEGER' },
           { name: 'name', type: 'TEXT' },

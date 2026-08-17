@@ -104,7 +104,7 @@ template_id + domain_uid
 
 ## 5. `domain_variable_history` view
 
-**Purpose:** Provides one read interface containing template metadata, domain identities, version-specific attributes, canonical descriptions, and `is_latest`/`is_current` flags.
+**Purpose:** Provides one read interface containing template metadata, domain identities, version-specific attributes, canonical descriptions, and an `is_latest` flag.
 
 ```sql
 SELECT *
@@ -324,4 +324,4 @@ domain_variable                     estimation_template
 - `domain_variable` is the source of truth for universal UID to domain UID mappings.
 - `estimation_template` is the source of truth for template history by technology and estimation phase.
 - `template_domain_variable` is the source of truth for template membership and version-specific domain names, sample values, and datatypes.
-- `domain_variable_history` is the supported read interface for latest, current, and historical domain-variable queries.
+- `domain_variable_history` is the supported read interface for latest and historical domain-variable queries.

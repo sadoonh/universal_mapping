@@ -17,8 +17,6 @@ SELECT
     et.valid_from,
     et.valid_to,
     et.template_rank = 1 AS is_latest,
-    CURRENT_DATE >= et.valid_from
-        AND (et.valid_to IS NULL OR CURRENT_DATE <= et.valid_to) AS is_current,
     tdv.domain_uid,
     dv.universal_uid,
     tdv.name,
