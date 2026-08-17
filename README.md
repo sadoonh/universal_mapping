@@ -37,7 +37,7 @@ Alternatively, open [`erd_demo.html`](erd_demo.html) directly without a server.
 
 ## 2. `domain_variable`
 
-**Purpose:** Stores each stable domain UID and its canonical universal-variable mapping. Template-specific names, defaults, and datatypes belong to `template_domain_variable` so historical templates remain unchanged.
+**Purpose:** Stores each stable domain UID and its canonical universal-variable mapping. Template-specific names, sample values, and datatypes belong to `template_domain_variable` so historical templates remain unchanged.
 
 | Column | Type | Purpose |
 | --- | --- | --- |
@@ -116,6 +116,187 @@ WHERE technology = 'Solar'
 
 Users can query complete history by removing `is_latest` or filtering by `domain_uid`.
 
+## First-time setup for a technology
+
+Use one transaction so a technology never appears partially configured. Repeat the template and membership steps for every estimation phase the technology supports.
+
+1. Define the technology name, estimation phases, first template names, and validity dates.
+2. Inventory each domain UID, its canonical universal UID, template-specific name, sample value, and datatype.
+3. Insert any canonical concepts that do not already exist in `universal_variable`. Reuse an existing universal UID when another technology represents the same concept; do not overwrite an existing canonical definition without reviewing it.
+4. Insert each stable domain UID and universal mapping into `domain_variable`. A domain UID is created once and must always retain the same universal mapping.
+5. Insert the initial row in `estimation_template` for one technology and estimation phase, capturing the generated `template_id`.
+6. Insert the complete initial snapshot into `template_domain_variable` using that generated ID.
+7. Repeat steps 5 and 6 for the technology's other estimation phases.
+8. Query `domain_variable_history` to confirm the latest template contains the expected variables and canonical mappings.
+9. Commit only after every phase passes validation; otherwise roll back the transaction.
+
+Example for the first Solar Assumption template:
+
+```sql
+BEGIN;
+
+INSERT INTO universal_variable (
+    universal_uid,
+    datatype,
+    description,
+    unit
+)
+VALUES
+    (1, 'NUMERIC', 'Installed capacity', 'MW'),
+    (2, 'NUMERIC', 'Total project cost', 'USD')
+ON CONFLICT (universal_uid) DO NOTHING;
+
+INSERT INTO domain_variable (
+    domain_uid,
+    universal_uid
+)
+VALUES
+    ('S_A_1', 1),
+    ('S_A_2', 2)
+ON CONFLICT (domain_uid) DO NOTHING;
+
+WITH new_template AS (
+    INSERT INTO estimation_template (
+        technology,
+        estimation_phase,
+        template_name,
+        valid_from,
+        valid_to
+    )
+    VALUES (
+        'Solar',
+        'Assumption',
+        '2024-01-A',
+        DATE '2024-01-01',
+        NULL
+    )
+    RETURNING template_id
+)
+INSERT INTO template_domain_variable (
+    template_id,
+    domain_uid,
+    name,
+    sample_value,
+    datatype
+)
+SELECT
+    new_template.template_id,
+    values_to_add.domain_uid,
+    values_to_add.name,
+    values_to_add.sample_value,
+    values_to_add.datatype
+FROM new_template
+CROSS JOIN (
+    VALUES
+        ('S_A_1', 'Solar Capacity', '250', 'NUMERIC'),
+        ('S_A_2', 'Project Capacity', '30000', 'NUMERIC')
+) AS values_to_add(domain_uid, name, sample_value, datatype);
+
+SELECT *
+FROM domain_variable_history
+WHERE technology = 'Solar'
+  AND estimation_phase = 'Assumption'
+  AND is_latest;
+
+COMMIT;
+```
+
+Before relying on `ON CONFLICT DO NOTHING`, verify that any existing `universal_uid` and `domain_uid` rows carry the intended definitions and mapping. Conflict handling prevents duplicate inserts; it does not prove that pre-existing data is correct.
+
+## Adding a new template or technology
+
+### New template for an existing technology and phase
+
+Treat published templates as immutable snapshots. Create a new template, copy the preceding snapshot, modify only the new copy, and preserve the old membership rows.
+
+1. Choose the new template name and `valid_from` date.
+2. Lock and identify the latest template for the same technology and estimation phase.
+3. Set the preceding template's inclusive `valid_to` to one day before the new template starts.
+4. Insert the new `estimation_template` row.
+5. Copy every preceding `template_domain_variable` row to the new `template_id`.
+6. Update names, sample values, or datatypes only on the new template's rows.
+7. Remove a domain UID from the new template by deleting only its new bridge row; keep the stable `domain_variable` row and all historical memberships.
+8. Add a previously unknown domain UID by first inserting its canonical universal concept when necessary, then its stable `domain_variable` row, and finally its new bridge row.
+9. Query `domain_variable_history` with `is_latest` and inspect the old template without that filter to confirm both snapshots.
+10. Commit the complete change together or roll it back.
+
+The copy-forward portion can be performed atomically:
+
+```sql
+BEGIN;
+
+WITH previous_template AS (
+    SELECT template_id
+    FROM estimation_template
+    WHERE technology = 'Solar'
+      AND estimation_phase = 'Assumption'
+    ORDER BY valid_from DESC, template_id DESC
+    LIMIT 1
+    FOR UPDATE
+),
+close_previous AS (
+    UPDATE estimation_template AS et
+    SET valid_to = DATE '2026-01-01' - 1
+    FROM previous_template AS previous
+    WHERE et.template_id = previous.template_id
+    RETURNING et.template_id
+),
+new_template AS (
+    INSERT INTO estimation_template (
+        technology,
+        estimation_phase,
+        template_name,
+        valid_from,
+        valid_to
+    )
+    VALUES (
+        'Solar',
+        'Assumption',
+        '2026-01-A',
+        DATE '2026-01-01',
+        NULL
+    )
+    RETURNING template_id
+)
+INSERT INTO template_domain_variable (
+    template_id,
+    domain_uid,
+    name,
+    sample_value,
+    datatype
+)
+SELECT
+    new_template.template_id,
+    previous_values.domain_uid,
+    previous_values.name,
+    previous_values.sample_value,
+    previous_values.datatype
+FROM previous_template
+JOIN template_domain_variable AS previous_values
+    ON previous_values.template_id = previous_template.template_id
+CROSS JOIN new_template
+RETURNING template_id;
+
+-- Apply edits only to the new template ID returned above before committing.
+
+COMMIT;
+```
+
+Capture the returned new `template_id` in the migration or application running this transaction, then use it for the additions, edits, and removals before `COMMIT`.
+
+### Entirely new technology
+
+An entirely new technology follows the first-time setup process rather than copying another technology's template IDs or domain UIDs.
+
+1. Define the new technology and every estimation phase it supports.
+2. Match its concepts to existing `universal_variable` rows and insert only genuinely new canonical concepts.
+3. Create new technology-specific domain UIDs in `domain_variable`, each mapped to the correct universal UID.
+4. Create one initial `estimation_template` row for each supported phase.
+5. Populate each new template's complete `template_domain_variable` snapshot with its names, sample values, and datatypes.
+6. Query `domain_variable_history` for the new technology and verify every phase, mapping, and latest-template result.
+7. Confirm that no templates belonging to another technology were closed or modified.
+8. Commit all phases together, or roll back the entire technology setup.
+
 ## Relationships
 
 ```text
@@ -142,5 +323,5 @@ domain_variable                     estimation_template
 - `universal_variable` is the source of truth for canonical variable meaning, datatype, description, and unit.
 - `domain_variable` is the source of truth for universal UID to domain UID mappings.
 - `estimation_template` is the source of truth for template history by technology and estimation phase.
-- `template_domain_variable` is the source of truth for template membership and version-specific domain names, defaults, and datatypes.
+- `template_domain_variable` is the source of truth for template membership and version-specific domain names, sample values, and datatypes.
 - `domain_variable_history` is the supported read interface for latest, current, and historical domain-variable queries.
